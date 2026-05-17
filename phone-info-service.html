@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phone Info Service — Lille</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --black:#06080f;
+  --dark:#0b0e18;
+  --card:#10131f;
+  --card2:#141828;
+  --line:rgba(255,255,255,0.07);
+  --line2:rgba(255,255,255,0.12);
+  --text:#ffffff;
+  --muted:rgba(255,255,255,0.45);
+  --dim:rgba(255,255,255,0.18);
+  --blue:#2563eb;
+  --blue-light:#3b82f6;
+  --blue-glow:rgba(37,99,235,0.25);
+  --gold:#f59e0b;
+  --gold-light:#fbbf24;
+  --gold-glow:rgba(245,158,11,0.2);
+  --green:#10b981;
+  --red:#ef4444;
+  --r:20px;
+  --r2:28px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Outfit',sans-serif;background:var(--black);color:var(--text);line-height:1.6;overflow-x:hidden}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--dark)}
+::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  height:68px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 48px;
+  background:rgba(6,8,15,0.85);
+  backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--line);
+}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-mark{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,var(--blue),#6366f1);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:900;color:#fff;letter-spacing:-1px;
+  box-shadow:0 0 20px var(--blue-glow);
+}
+.logo-text{font-size:16px;font-weight:700;color:#fff;letter-spacing:-0.02em}
+.logo-text span{color:var(--gold)}
+.nav-center{display:flex;gap:4px}
+.nav-center a{
+  color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;
+  padding:8px 16px;border-radius:10px;transition:.2s
+}
+.nav-center a:hover{color:#fff;background:rgba(255,255,255,0.06)}
+.nav-right{display:flex;align-items:center;gap:12px}
+.nav-phone{
+  display:flex;align-items:center;gap:8px;
+  font-size:14px;font-weight:600;color:var(--gold);
+  text-decoration:none;
+  background:rgba(245,158,11,0.1);
+  border:1px solid rgba(245,158,11,0.2);
+  padding:9px 18px;border-radius:100px;
+  transition:.2s;
+}
+.nav-phone:hover{background:rgba(245,158,11,0.18)}
+
+/* ── HERO ── */
+.hero{
+  min-height:100vh;
+  display:grid;grid-template-columns:1fr 1fr;
+  align-items:center;gap:0;
+  padding-top:68px;
+  position:relative;overflow:hidden;
+}
+/* Left side */
+.hero-left{
+  padding:80px 56px 80px 48px;
+  position:relative;z-index:2;
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.25);
+  color:#93c5fd;font-size:12px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;padding:6px 14px;border-radius:100px;
+  margin-bottom:32px;
+}
+.hero-badge i{width:6px;height:6px;border-radius:50%;background:var(--blue-light);display:inline-block;box-shadow:0 0 8px var(--blue-light)}
+.hero-h1{
+  font-size:clamp(48px,5.5vw,76px);font-weight:900;
+  line-height:1.0;letter-spacing:-0.04em;
+  margin-bottom:24px;
+}
+.hero-h1 .line-white{color:#fff;display:block}
+.hero-h1 .line-blue{
+  display:block;
+  background:linear-gradient(90deg,var(--blue-light),#818cf8);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-h1 .line-gold{color:var(--gold);display:block}
+.hero-p{
+  font-size:17px;font-weight:300;color:var(--muted);
+  line-height:1.75;max-width:460px;margin-bottom:40px;
+}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:52px}
+.btn-primary{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--blue);color:#fff;
+  font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;
+  padding:14px 28px;border-radius:14px;text-decoration:none;
+  transition:.2s;box-shadow:0 8px 32px rgba(37,99,235,0.35);
+}
+.btn-primary:hover{background:#1d4ed8;transform:translateY(-2px);box-shadow:0 12px 40px rgba(37,99,235,0.45)}
+.btn-outline{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,0.05);color:#fff;border:1px solid var(--line2);
+  font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;
+  padding:14px 28px;border-radius:14px;text-decoration:none;transition:.2s;
+}
+.btn-outline:hover{background:rgba(255,255,255,0.09);border-color:rgba(255,255,255,0.2)}
+/* Stat row */
+.hero-stats{display:flex;gap:0;border-top:1px solid var(--line)}
+.hstat{
+  flex:1;padding:20px 0 0;
+  border-right:1px solid var(--line);
+}
+.hstat:last-child{border-right:none;padding-left:24px}
+.hstat:first-child{padding-right:24px}
+.hstat-n{font-size:28px;font-weight:800;letter-spacing:-0.03em;color:#fff}
+.hstat-l{font-size:13px;color:var(--muted);margin-top:2px}
+
+/* Right side — phone showcase */
+.hero-right{
+  position:relative;height:100vh;
+  background:linear-gradient(135deg,rgba(37,99,235,0.06) 0%,rgba(99,102,241,0.04) 50%,rgba(245,158,11,0.03) 100%);
+  border-left:1px solid var(--line);
+  overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+}
+/* grid pattern */
+.hero-right::before{
+  content:'';position:absolute;inset:0;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:40px 40px;
+  mask-image:radial-gradient(ellipse 70% 70% at 50% 50%,black 40%,transparent 100%);
+}
+/* glow orbs */
+.hero-orb{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none}
+.orb-a{width:300px;height:300px;background:radial-gradient(circle,rgba(37,99,235,0.2),transparent 70%);top:10%;right:10%;animation:orb 8s ease-in-out infinite}
+.orb-b{width:200px;height:200px;background:radial-gradient(circle,rgba(99,102,241,0.15),transparent 70%);bottom:15%;left:15%;animation:orb 11s ease-in-out infinite reverse}
+@keyframes orb{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-20px,20px) scale(1.08)}}
+
+/* Phone scroller */
+.phone-scroller{
+  position:relative;z-index:2;
+  width:260px;
+  height:580px;
+  overflow:hidden;
+  mask-image:linear-gradient(to bottom,transparent 0%,black 15%,black 85%,transparent 100%);
+}
+.phone-track{
+  display:flex;flex-direction:column;align-items:center;gap:32px;
+  animation:scrollPhones 18s linear infinite;
+}
+@keyframes scrollPhones{
+  0%{transform:translateY(0)}
+  100%{transform:translateY(-50%)}
+}
+.phone-card{
+  width:200px;flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+}
+.phone-label{
+  font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  padding:4px 14px;border-radius:100px;
+}
+.pl-red{background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.2)}
+.pl-blue{background:rgba(37,99,235,.12);color:#93c5fd;border:1px solid rgba(37,99,235,.2)}
+.pl-green{background:rgba(16,185,129,.12);color:#6ee7b7;border:1px solid rgba(16,185,129,.2)}
+.pl-gold{background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.2)}
+
+/* ── SERVICES TICKER (transition band) ── */
+.ticker{
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  background:var(--dark);
+  overflow:hidden;padding:0;height:52px;display:flex;align-items:center;
+}
+.ticker-track{
+  display:flex;gap:0;
+  animation:tick 22s linear infinite;
+  white-space:nowrap;
+}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ticker-item{
+  display:flex;align-items:center;gap:10px;
+  padding:0 36px;
+  border-right:1px solid var(--line);
+  font-size:13px;font-weight:600;color:var(--muted);
+  letter-spacing:.02em;flex-shrink:0;height:52px;
+}
+.ticker-item span{font-size:16px}
+.ticker-dot{width:4px;height:4px;border-radius:50%;background:var(--blue);margin-left:36px;flex-shrink:0}
+
+/* ── SECTIONS COMMON ── */
+.section{padding:96px 48px;position:relative}
+.eyebrow{
+  font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--blue-light);margin-bottom:14px;display:flex;align-items:center;gap:10px;
+}
+.eyebrow::before{content:'';width:20px;height:1.5px;background:var(--blue-light);border-radius:1px}
+.section-title{
+  font-size:clamp(32px,4vw,52px);font-weight:800;
+  letter-spacing:-0.03em;line-height:1.1;margin-bottom:16px;
+}
+.section-sub{
+  font-size:16px;font-weight:300;color:var(--muted);
+  max-width:520px;line-height:1.75;margin-bottom:56px;
+}
+
+/* ── SERVICES GRID ── */
+.services-bg{background:var(--dark)}
+.svc-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:1px;
+  background:var(--line);border:1px solid var(--line);
+  border-radius:var(--r2);overflow:hidden;
+}
+.svc{
+  background:var(--card);padding:40px 36px;
+  position:relative;overflow:hidden;
+  transition:background .25s;cursor:default;
+}
+.svc:hover{background:var(--card2)}
+.svc::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.05),transparent);
+}
+.svc-num{
+  font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--dim);
+  margin-bottom:20px;
+}
+.svc-icon-ring{
+  width:56px;height:56px;border-radius:16px;
+  display:flex;align-items:center;justify-content:center;font-size:26px;
+  margin-bottom:22px;transition:transform .25s;
+}
+.svc:hover .svc-icon-ring{transform:scale(1.08) rotate(-4deg)}
+.ir-blue{background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.18)}
+.ir-gold{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.18)}
+.ir-green{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.18)}
+.ir-purple{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.18)}
+.svc-title{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:10px}
+.svc-desc{font-size:14px;font-weight:300;color:var(--muted);line-height:1.65;margin-bottom:24px}
+.svc-items{list-style:none;display:flex;flex-direction:column;gap:9px}
+.svc-items li{
+  font-size:13px;color:var(--dim);
+  display:flex;align-items:center;gap:10px;
+}
+.svc-items li::before{content:'';width:5px;height:1px;background:var(--blue-light);flex-shrink:0}
+
+/* ── REPAIR ── */
+.repair-bg{background:var(--black)}
+.repair-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.rcard{
+  background:var(--card);
+  border:1px solid var(--line);border-radius:var(--r2);
+  padding:44px 40px;position:relative;overflow:hidden;
+  transition:border-color .25s;
+}
+.rcard:hover{border-color:var(--line2)}
+.rcard-accent{
+  position:absolute;top:0;left:0;right:0;height:2px;
+}
+.ra-blue{background:linear-gradient(90deg,transparent,var(--blue-light),transparent)}
+.ra-purple{background:linear-gradient(90deg,transparent,#818cf8,transparent)}
+.rcard-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px}
+.rcard-title{display:flex;align-items:center;gap:12px;font-size:22px;font-weight:800;letter-spacing:-.03em}
+.rtag{
+  font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:5px 14px;border-radius:100px;
+}
+.rtag-blue{background:rgba(37,99,235,.12);color:#93c5fd;border:1px solid rgba(37,99,235,.2)}
+.rtag-purple{background:rgba(99,102,241,.12);color:#c4b5fd;border:1px solid rgba(99,102,241,.2)}
+.rlist{list-style:none;display:flex;flex-direction:column}
+.rlist li{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 0;border-bottom:1px solid var(--line);
+  font-size:15px;font-weight:400;color:var(--muted);transition:color .2s;
+}
+.rlist li:last-child{border-bottom:none;padding-bottom:0}
+.rlist li:hover{color:#fff}
+.rcheck{
+  width:24px;height:24px;border-radius:7px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;
+}
+.rc-blue{background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.2);color:var(--blue-light)}
+.rc-purple{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);color:#c4b5fd}
+
+/* ── WHY ── */
+.why-bg{background:var(--dark)}
+.why-layout{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.why-left .section-sub{margin-bottom:0}
+.why-items{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:var(--r2);overflow:hidden}
+.witem{
+  display:flex;align-items:flex-start;gap:20px;
+  padding:24px 28px;border-bottom:1px solid var(--line);
+  background:var(--card);transition:background .2s;
+}
+.witem:last-child{border-bottom:none}
+.witem:hover{background:var(--card2)}
+.wnum{
+  font-size:12px;font-weight:800;letter-spacing:.06em;
+  color:var(--blue-light);
+  background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.18);
+  width:30px;height:30px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.wtitle{font-size:15px;font-weight:700;letter-spacing:-.01em;margin-bottom:4px}
+.wdesc{font-size:13px;font-weight:300;color:var(--muted);line-height:1.55}
+
+/* ── CONTACT ── */
+.contact-bg{background:var(--black)}
+.contact-layout{display:grid;grid-template-columns:1fr 1.4fr;gap:32px;align-items:start}
+.ccard{
+  background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r2);padding:44px 40px;
+}
+.ccard-title{font-size:24px;font-weight:800;letter-spacing:-.03em;margin-bottom:32px}
+.crows{display:flex;flex-direction:column;margin-bottom:32px}
+.crow{
+  display:flex;align-items:flex-start;gap:16px;
+  padding:18px 0;border-bottom:1px solid var(--line);
+}
+.crow:first-child{padding-top:0}
+.crow:last-child{border-bottom:none;padding-bottom:0}
+.crow-icon{
+  width:42px;height:42px;border-radius:12px;
+  background:rgba(255,255,255,.04);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;
+}
+.crow-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin-bottom:5px}
+.crow-val{font-size:15px;font-weight:600;color:#fff;line-height:1.4}
+.crow-val a{color:var(--blue-light);text-decoration:none}
+.crow-val a:hover{text-decoration:underline}
+.cta-call{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;padding:16px;border-radius:14px;
+  background:linear-gradient(135deg,var(--blue),#4f46e5);
+  color:#fff;font-family:'Outfit',sans-serif;
+  font-size:16px;font-weight:700;text-decoration:none;
+  box-shadow:0 8px 32px rgba(37,99,235,.3);transition:.2s;
+}
+.cta-call:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(37,99,235,.45)}
+.map-block{
+  border-radius:var(--r2);overflow:hidden;
+  border:1px solid var(--line);height:420px;
+}
+.map-block iframe{width:100%;height:100%;border:none;display:block;filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(1.1) saturate(.8)}
+
+/* ── FOOTER ── */
+footer{
+  background:var(--dark);border-top:1px solid var(--line);
+  padding:32px 48px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;
+}
+.footer-logo{font-size:16px;font-weight:800;letter-spacing:-.02em}
+.footer-logo span{color:var(--gold)}
+.footer-nav{display:flex;gap:4px;list-style:none}
+.footer-nav a{
+  font-size:13px;font-weight:500;color:var(--dim);
+  text-decoration:none;padding:6px 12px;border-radius:8px;transition:.2s;
+}
+.footer-nav a:hover{color:#fff;background:rgba(255,255,255,.05)}
+.footer-copy{font-size:12px;color:var(--dim)}
+
+/* ── REVEAL ── */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
+.reveal.in{opacity:1;transform:none}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  /* NAV */
+  nav{padding:0 16px;height:56px}
+  .nav-center{display:none}
+  .nav-phone{font-size:12px;padding:7px 12px}
+  .logo-text{font-size:14px}
+
+  /* HERO */
+  .hero{grid-template-columns:1fr;min-height:auto;padding-top:56px}
+  .hero-right{display:none}
+  .hero-left{padding:32px 16px 40px}
+  .hero-h1{font-size:36px;letter-spacing:-.03em}
+  .hero-p{font-size:15px;margin-bottom:28px}
+  .hero-ctas{flex-direction:column;gap:10px}
+  .btn-primary,.btn-outline{width:100%;justify-content:center;padding:14px}
+  .hero-stats{flex-wrap:wrap;gap:0}
+  .hstat{min-width:50%;padding:16px 12px!important;border-right:none!important;border-bottom:1px solid var(--line)}
+  .hstat-n{font-size:22px}
+
+  /* SECTIONS */
+  .section{padding:48px 16px}
+  .section-title{font-size:26px}
+  .section-sub{font-size:14px;margin-bottom:32px}
+  .eyebrow{font-size:10px}
+
+  /* SERVICES */
+  .svc-grid{grid-template-columns:1fr}
+  .svc{padding:24px 20px}
+  .svc-title{font-size:17px}
+
+  /* REPAIR */
+  .repair-grid{grid-template-columns:1fr}
+  .rcard{padding:28px 20px}
+  .rcard-title{font-size:18px}
+  .rlist li{font-size:13px}
+
+  /* WHY */
+  .why-layout{grid-template-columns:1fr;gap:32px}
+  .why-left .section-sub{margin-bottom:28px}
+  .witem{padding:18px 16px}
+  .wtitle{font-size:14px}
+  .wdesc{font-size:12px}
+
+  /* CONTACT */
+  .contact-layout{grid-template-columns:1fr}
+  .ccard{padding:24px 20px}
+  .map-block{height:260px}
+  .crow-val{font-size:14px}
+
+  /* STATS */
+  div[style*="grid-template-columns:repeat(3,1fr)"]{
+    grid-template-columns:1fr!important;
+  }
+
+  /* AVIS */
+  #avis-wrap{padding-bottom:12px}
+
+  /* TICKER */
+  .ticker-item{padding:0 16px;font-size:12px}
+
+  /* FOOTER */
+  footer{padding:20px 16px;flex-direction:column;align-items:flex-start;gap:12px}
+  .footer-nav{flex-wrap:wrap;gap:2px}
+  .footer-copy{font-size:11px}
+
+  /* FLOATING BTN */
+  #espace-btn{bottom:16px;right:16px;padding:11px 16px;font-size:13px}
+
+  /* PHONE SCROLLER in hero (hidden on mobile) */
+  .phone-scroller{display:none}
+}
+
+@media(max-width:480px){
+  .hero-h1{font-size:30px}
+  .section-title{font-size:22px}
+  .svc-grid{grid-template-columns:1fr}
+  .hstat{min-width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="logo">
+    <div class="logo-mark">P</div>
+    <span class="logo-text">Phone<span>Info</span></span>
+  </a>
+  <div class="nav-center">
+    <a href="#services">Services</a>
+    <a href="#reparation">Réparation</a>
+    <a href="#pourquoi">À propos</a>
+    <a href="#contact">Contact</a>
+  </div>
+  <div class="nav-right">
+    <a href="tel:0759101321" class="nav-phone">📞 07 59 10 13 21</a>
+    <button id="menu-btn" onclick="toggleMenu()" style="display:none;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:10px;width:38px;height:38px;cursor:pointer;color:#fff;font-size:18px;align-items:center;justify-content:center;">☰</button>
+  </div>
+</nav>
+
+<!-- MOBILE MENU -->
+<div id="mobile-menu" style="display:none;position:fixed;top:56px;left:0;right:0;background:rgba(6,8,15,.97);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.07);z-index:199;padding:12px 16px 20px;flex-direction:column;gap:4px;">
+  <a href="#services"   onclick="toggleMenu()" style="color:rgba(255,255,255,.7);text-decoration:none;font-size:15px;font-weight:500;padding:12px 16px;border-radius:12px;display:block;">Services</a>
+  <a href="#reparation" onclick="toggleMenu()" style="color:rgba(255,255,255,.7);text-decoration:none;font-size:15px;font-weight:500;padding:12px 16px;border-radius:12px;display:block;">Réparation</a>
+  <a href="#pourquoi"   onclick="toggleMenu()" style="color:rgba(255,255,255,.7);text-decoration:none;font-size:15px;font-weight:500;padding:12px 16px;border-radius:12px;display:block;">À propos</a>
+  <a href="#contact"    onclick="toggleMenu()" style="color:rgba(255,255,255,.7);text-decoration:none;font-size:15px;font-weight:500;padding:12px 16px;border-radius:12px;display:block;">Contact</a>
+  <a href="tel:0759101321" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;padding:14px;border-radius:14px;background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#000;font-weight:700;font-size:15px;text-decoration:none;">📞 07 59 10 13 21</a>
+</div>
+
+<script>
+function toggleMenu(){
+  var m=document.getElementById('mobile-menu');
+  var b=document.getElementById('menu-btn');
+  var open=m.style.display==='flex';
+  m.style.display=open?'none':'flex';
+  b.textContent=open?'☰':'×';
+}
+// Show hamburger on mobile
+if(window.innerWidth<=768){
+  document.getElementById('menu-btn').style.display='flex';
+  document.querySelector('.nav-phone').style.display='none';
+}
+window.addEventListener('resize',function(){
+  var isMobile=window.innerWidth<=768;
+  document.getElementById('menu-btn').style.display=isMobile?'flex':'none';
+  document.querySelector('.nav-phone').style.display=isMobile?'none':'flex';
+});
+</script>
+
+<!-- HERO -->
+<section class="hero">
+  <!-- LEFT -->
+  <div class="hero-left">
+    <div class="hero-badge"><i></i> Lille — Place Caulier, 59800</div>
+    <h1 class="hero-h1">
+      <span class="line-white">Votre expert</span>
+      <span class="line-blue">téléphonie</span>
+      <span class="line-gold">&amp; services</span>
+    </h1>
+    <p class="hero-p">Vente, réparation rapide et services du quotidien pour vos appareils électroniques. Professionnels, réactifs, et toujours à votre écoute à Lille.</p>
+    <div class="hero-ctas">
+      <a href="tel:0759101321" class="btn-primary">📞 Nous appeler</a>
+      <a href="#services" class="btn-outline">Voir nos services →</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat" style="padding-right:24px">
+        <div class="hstat-n" style="color:var(--blue-light)">5+</div>
+        <div class="hstat-l">Services disponibles</div>
+      </div>
+      <div class="hstat" style="padding:20px 24px 0;border-right:1px solid var(--line)">
+        <div class="hstat-n" style="color:var(--gold)">Express</div>
+        <div class="hstat-l">Réparation rapide</div>
+      </div>
+      <div class="hstat" style="padding:20px 0 0 24px">
+        <div class="hstat-n" style="color:var(--green)">Ria</div>
+        <div class="hstat-l">Transfert international</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT — phone scroller -->
+  <div class="hero-right">
+    <div class="hero-orb orb-a"></div>
+    <div class="hero-orb orb-b"></div>
+
+    <div class="phone-scroller">
+      <div class="phone-track">
+
+        <!-- Phone 1 : Broken -->
+        <div class="phone-card">
+          <svg width="180" height="340" viewBox="0 0 180 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="g-broken-body" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#1c2133"/><stop offset="100%" stop-color="#131825"/>
+              </linearGradient>
+              <linearGradient id="g-broken-screen" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#0a0d16"/><stop offset="100%" stop-color="#0d1020"/>
+              </linearGradient>
+            </defs>
+            <!-- Body -->
+            <rect x="5" y="5" width="170" height="330" rx="26" fill="url(#g-broken-body)" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+            <!-- Screen -->
+            <rect x="14" y="28" width="152" height="272" rx="18" fill="url(#g-broken-screen)"/>
+            <!-- Notch -->
+            <rect x="65" y="18" width="50" height="14" rx="7" fill="#090c15"/>
+            <circle cx="90" cy="25" r="4" fill="#12172a"/>
+            <!-- Cracks -->
+            <path d="M30 55 L105 200 L155 295" stroke="rgba(255,255,255,0.6)" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M55 90 L18 155" stroke="rgba(255,255,255,0.35)" stroke-width="1" stroke-linecap="round"/>
+            <path d="M105 200 L60 265" stroke="rgba(255,255,255,0.35)" stroke-width="1" stroke-linecap="round"/>
+            <path d="M135 225 L162 185" stroke="rgba(255,255,255,0.25)" stroke-width="0.8" stroke-linecap="round"/>
+            <path d="M42 65 L75 50" stroke="rgba(255,255,255,0.2)" stroke-width="0.8" stroke-linecap="round"/>
+            <!-- Shatter fill -->
+            <polygon points="30,55 55,90 18,155 12,85" fill="rgba(239,68,68,0.05)"/>
+            <polygon points="105,200 155,295 60,265" fill="rgba(239,68,68,0.04)"/>
+            <!-- Dead zone -->
+            <rect x="22" y="65" width="56" height="48" rx="6" fill="rgba(0,0,0,0.75)"/>
+            <!-- Warning circle -->
+            <circle cx="90" cy="210" r="22" fill="rgba(239,68,68,0.1)" stroke="rgba(239,68,68,0.3)" stroke-width="1.5"/>
+            <text x="90" y="218" text-anchor="middle" font-size="20" fill="rgba(239,68,68,0.9)" font-family="Outfit,sans-serif" font-weight="700">!</text>
+            <!-- Screen content ghost -->
+            <rect x="28" y="150" width="124" height="8" rx="4" fill="rgba(255,255,255,0.04)"/>
+            <rect x="28" y="166" width="90" height="6" rx="3" fill="rgba(255,255,255,0.03)"/>
+            <!-- Home bar -->
+            <rect x="62" y="310" width="56" height="5" rx="2.5" fill="rgba(255,255,255,0.08)"/>
+            <!-- Side buttons -->
+            <rect x="1" y="90" width="4" height="36" rx="2" fill="rgba(255,255,255,0.06)"/>
+            <rect x="175" y="80" width="4" height="28" rx="2" fill="rgba(255,255,255,0.06)"/>
+            <rect x="175" y="116" width="4" height="28" rx="2" fill="rgba(255,255,255,0.06)"/>
+          </svg>
+          <div class="phone-label pl-red">Écran cassé</div>
+        </div>
+
+        <!-- Divider: repair in progress -->
+        <div class="phone-card" style="flex-direction:row;gap:16px;align-items:center;justify-content:center;padding:20px 0">
+          <div style="flex:1;height:1px;background:linear-gradient(to right,transparent,rgba(37,99,235,0.4))"></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="width:48px;height:48px;border-radius:50%;background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.25);display:flex;align-items:center;justify-content:center;animation:spin 3s linear infinite">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 2.5A8.5 8.5 0 1 1 2.5 11" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(59,130,246,0.7)">Réparation</span>
+          </div>
+          <div style="flex:1;height:1px;background:linear-gradient(to left,transparent,rgba(37,99,235,0.4))"></div>
+        </div>
+
+        <!-- Phone 2 : Repaired -->
+        <div class="phone-card">
+          <svg width="180" height="340" viewBox="0 0 180 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="g-ok-body" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#1a2540"/><stop offset="100%" stop-color="#111828"/>
+              </linearGradient>
+              <linearGradient id="g-ok-wp" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#0d1a35"/><stop offset="100%" stop-color="#0a1220"/>
+              </linearGradient>
+            </defs>
+            <rect x="5" y="5" width="170" height="330" rx="26" fill="url(#g-ok-body)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+            <rect x="14" y="28" width="152" height="272" rx="18" fill="url(#g-ok-wp)"/>
+            <!-- wallpaper orbs -->
+            <circle cx="120" cy="90" r="70" fill="rgba(37,99,235,0.12)"/>
+            <circle cx="55" cy="210" r="55" fill="rgba(99,102,241,0.09)"/>
+            <!-- Notch -->
+            <rect x="65" y="18" width="50" height="14" rx="7" fill="#090c15"/>
+            <circle cx="90" cy="25" r="4" fill="#131d30"/>
+            <circle cx="90" cy="25" r="2" fill="rgba(37,99,235,0.5)"/>
+            <!-- Status bar -->
+            <text x="24" y="50" font-size="10" fill="rgba(255,255,255,0.5)" font-family="Outfit,sans-serif" font-weight="500">9:41</text>
+            <rect x="130" y="44" width="18" height="8" rx="2" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="0.8"/>
+            <rect x="131" y="45" width="14" height="6" rx="1" fill="rgba(16,185,129,0.8)"/>
+            <!-- App grid -->
+            <rect x="24" y="65" width="28" height="28" rx="8" fill="rgba(37,99,235,0.35)"/>
+            <rect x="60" y="65" width="28" height="28" rx="8" fill="rgba(99,102,241,0.35)"/>
+            <rect x="96" y="65" width="28" height="28" rx="8" fill="rgba(16,185,129,0.35)"/>
+            <rect x="132" y="65" width="24" height="28" rx="8" fill="rgba(245,158,11,0.35)"/>
+            <rect x="24" y="101" width="28" height="28" rx="8" fill="rgba(239,68,68,0.25)"/>
+            <rect x="60" y="101" width="28" height="28" rx="8" fill="rgba(255,255,255,0.06)"/>
+            <rect x="96" y="101" width="28" height="28" rx="8" fill="rgba(255,255,255,0.06)"/>
+            <rect x="132" y="101" width="24" height="28" rx="8" fill="rgba(255,255,255,0.06)"/>
+            <!-- Notification card -->
+            <rect x="20" y="144" width="140" height="56" rx="14" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+            <circle cx="36" cy="164" r="8" fill="rgba(16,185,129,0.3)"/>
+            <text x="36" y="168" text-anchor="middle" font-size="10" fill="#10b981" font-family="Outfit,sans-serif">✓</text>
+            <rect x="50" y="158" width="72" height="7" rx="3.5" fill="rgba(255,255,255,0.2)"/>
+            <rect x="50" y="172" width="50" height="5" rx="2.5" fill="rgba(255,255,255,0.1)"/>
+            <text x="148" y="164" font-size="9" fill="rgba(255,255,255,0.25)" font-family="Outfit,sans-serif">now</text>
+            <!-- Big green check -->
+            <circle cx="90" cy="236" r="24" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.3)" stroke-width="1.5"/>
+            <path d="M79 236 L87 244 L103 224" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <!-- Dock -->
+            <rect x="20" y="270" width="140" height="22" rx="11" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+            <circle cx="42" cy="281" r="7" fill="rgba(255,255,255,0.08)"/>
+            <circle cx="68" cy="281" r="7" fill="rgba(37,99,235,0.4)"/>
+            <circle cx="112" cy="281" r="7" fill="rgba(255,255,255,0.08)"/>
+            <circle cx="138" cy="281" r="7" fill="rgba(255,255,255,0.08)"/>
+            <!-- Home bar -->
+            <rect x="62" y="310" width="56" height="5" rx="2.5" fill="rgba(255,255,255,0.12)"/>
+            <rect x="1" y="90" width="4" height="36" rx="2" fill="rgba(255,255,255,0.08)"/>
+            <rect x="175" y="80" width="4" height="28" rx="2" fill="rgba(255,255,255,0.08)"/>
+            <rect x="175" y="116" width="4" height="28" rx="2" fill="rgba(255,255,255,0.08)"/>
+          </svg>
+          <div class="phone-label pl-green">Réparé ✓</div>
+        </div>
+
+        <!-- Phone 3 : For sale -->
+        <div class="phone-card">
+          <svg width="180" height="340" viewBox="0 0 180 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="g-sale-body" x1="0" y1="1" x2="1" y2="0">
+                <stop offset="0%" stop-color="#16182e"/><stop offset="100%" stop-color="#1e1040"/>
+              </linearGradient>
+              <linearGradient id="g-sale-screen" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#0f0a24"/><stop offset="100%" stop-color="#1a0f36"/>
+              </linearGradient>
+            </defs>
+            <rect x="5" y="5" width="170" height="330" rx="26" fill="url(#g-sale-body)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+            <!-- edge shine -->
+            <rect x="5" y="5" width="170" height="14" rx="22" fill="rgba(255,255,255,0.04)"/>
+            <rect x="14" y="28" width="152" height="272" rx="18" fill="url(#g-sale-screen)"/>
+            <!-- Purple orb wp -->
+            <circle cx="90" cy="140" r="80" fill="rgba(99,102,241,0.1)"/>
+            <circle cx="90" cy="140" r="44" fill="rgba(99,102,241,0.08)"/>
+            <!-- Modern island camera -->
+            <rect x="56" y="12" width="68" height="18" rx="9" fill="#080a14"/>
+            <circle cx="76" cy="21" r="5" fill="#0f1020"/>
+            <circle cx="76" cy="21" r="2.5" fill="rgba(99,102,241,0.5)"/>
+            <circle cx="94" cy="21" r="5" fill="#0f1020"/>
+            <circle cx="94" cy="21" r="2.5" fill="rgba(245,158,11,0.4)"/>
+            <!-- Status -->
+            <text x="24" y="50" font-size="10" fill="rgba(255,255,255,0.6)" font-family="Outfit,sans-serif" font-weight="500">9:41</text>
+            <!-- Product card on screen -->
+            <rect x="22" y="58" width="136" height="125" rx="12" fill="rgba(99,102,241,0.07)" stroke="rgba(99,102,241,0.14)" stroke-width="0.5"/>
+            <!-- Mini phone inside screen -->
+            <rect x="62" y="70" width="56" height="80" rx="10" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="0.7"/>
+            <rect x="67" y="76" width="46" height="66" rx="8" fill="rgba(99,102,241,0.15)"/>
+            <rect x="76" y="151" width="28" height="4" rx="2" fill="rgba(255,255,255,0.12)"/>
+            <!-- Stars -->
+            <text x="90" y="170" text-anchor="middle" font-size="10" fill="rgba(245,158,11,0.8)" font-family="Outfit,sans-serif">★★★★★</text>
+            <!-- Price tag -->
+            <rect x="22" y="194" width="136" height="46" rx="10" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.2)" stroke-width="0.7"/>
+            <text x="90" y="210" text-anchor="middle" font-size="9" fill="rgba(245,158,11,0.7)" font-family="Outfit,sans-serif" font-weight="700" letter-spacing="1">NEUF · RECONDITIONNÉ</text>
+            <text x="90" y="230" text-anchor="middle" font-size="16" fill="#fcd34d" font-family="Outfit,sans-serif" font-weight="800">Dès 89 €</text>
+            <!-- CTA -->
+            <rect x="22" y="252" width="136" height="32" rx="16" fill="rgba(37,99,235,0.25)" stroke="rgba(37,99,235,0.35)" stroke-width="0.8"/>
+            <text x="90" y="272" text-anchor="middle" font-size="11" fill="#93c5fd" font-family="Outfit,sans-serif" font-weight="700">Voir en magasin →</text>
+            <!-- Home bar -->
+            <rect x="62" y="310" width="56" height="5" rx="2.5" fill="rgba(255,255,255,0.12)"/>
+            <rect x="175" y="80" width="4" height="28" rx="2" fill="rgba(255,255,255,0.06)"/>
+          </svg>
+          <div class="phone-label pl-gold">En vente</div>
+        </div>
+
+        <!-- DUPLICATE for seamless loop -->
+        <div class="phone-card">
+          <svg width="180" height="340" viewBox="0 0 180 340" fill="none"><rect x="5" y="5" width="170" height="330" rx="26" fill="url(#g-broken-body)" stroke="rgba(255,255,255,0.07)" stroke-width="1"/><rect x="14" y="28" width="152" height="272" rx="18" fill="url(#g-broken-screen)"/><rect x="65" y="18" width="50" height="14" rx="7" fill="#090c15"/><circle cx="90" cy="25" r="4" fill="#12172a"/><path d="M30 55 L105 200 L155 295" stroke="rgba(255,255,255,0.6)" stroke-width="1.8" stroke-linecap="round"/><path d="M55 90 L18 155" stroke="rgba(255,255,255,0.35)" stroke-width="1" stroke-linecap="round"/><path d="M105 200 L60 265" stroke="rgba(255,255,255,0.35)" stroke-width="1" stroke-linecap="round"/><polygon points="30,55 55,90 18,155 12,85" fill="rgba(239,68,68,0.05)"/><rect x="22" y="65" width="56" height="48" rx="6" fill="rgba(0,0,0,0.75)"/><circle cx="90" cy="210" r="22" fill="rgba(239,68,68,0.1)" stroke="rgba(239,68,68,0.3)" stroke-width="1.5"/><text x="90" y="218" text-anchor="middle" font-size="20" fill="rgba(239,68,68,0.9)" font-family="Outfit,sans-serif" font-weight="700">!</text><rect x="62" y="310" width="56" height="5" rx="2.5" fill="rgba(255,255,255,0.08)"/><rect x="1" y="90" width="4" height="36" rx="2" fill="rgba(255,255,255,0.06)"/><rect x="175" y="80" width="4" height="28" rx="2" fill="rgba(255,255,255,0.06)"/></svg>
+          <div class="phone-label pl-red">Écran cassé</div>
+        </div>
+        <div class="phone-card" style="flex-direction:row;gap:16px;align-items:center;justify-content:center;padding:20px 0">
+          <div style="flex:1;height:1px;background:linear-gradient(to right,transparent,rgba(37,99,235,0.4))"></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="width:48px;height:48px;border-radius:50%;background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.25);display:flex;align-items:center;justify-content:center;animation:spin 3s linear infinite">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 2.5A8.5 8.5 0 1 1 2.5 11" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(59,130,246,0.7)">Réparation</span>
+          </div>
+          <div style="flex:1;height:1px;background:linear-gradient(to left,transparent,rgba(37,99,235,0.4))"></div>
+        </div>
+        <div class="phone-card">
+          <svg width="180" height="340" viewBox="0 0 180 340" fill="none"><rect x="5" y="5" width="170" height="330" rx="26" fill="url(#g-ok-body)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/><rect x="14" y="28" width="152" height="272" rx="18" fill="url(#g-ok-wp)"/><circle cx="120" cy="90" r="70" fill="rgba(37,99,235,0.12)"/><rect x="65" y="18" width="50" height="14" rx="7" fill="#090c15"/><text x="24" y="50" font-size="10" fill="rgba(255,255,255,0.5)" font-family="Outfit,sans-serif">9:41</text><rect x="24" y="65" width="28" height="28" rx="8" fill="rgba(37,99,235,0.35)"/><rect x="60" y="65" width="28" height="28" rx="8" fill="rgba(99,102,241,0.35)"/><rect x="96" y="65" width="28" height="28" rx="8" fill="rgba(16,185,129,0.35)"/><rect x="132" y="65" width="24" height="28" rx="8" fill="rgba(245,158,11,0.35)"/><circle cx="90" cy="236" r="24" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.3)" stroke-width="1.5"/><path d="M79 236 L87 244 L103 224" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><rect x="62" y="310" width="56" height="5" rx="2.5" fill="rgba(255,255,255,0.12)"/><rect x="1" y="90" width="4" height="36" rx="2" fill="rgba(255,255,255,0.08)"/></svg>
+          <div class="phone-label pl-green">Réparé ✓</div>
+        </div>
+        <div class="phone-card">
+          <svg width="180" height="340" viewBox="0 0 180 340" fill="none"><rect x="5" y="5" width="170" height="330" rx="26" fill="url(#g-sale-body)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/><rect x="14" y="28" width="152" height="272" rx="18" fill="url(#g-sale-screen)"/><circle cx="90" cy="140" r="80" fill="rgba(99,102,241,0.1)"/><rect x="22" y="58" width="136" height="125" rx="12" fill="rgba(99,102,241,0.07)" stroke="rgba(99,102,241,0.14)" stroke-width="0.5"/><rect x="22" y="194" width="136" height="46" rx="10" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.2)" stroke-width="0.7"/><text x="90" y="210" text-anchor="middle" font-size="9" fill="rgba(245,158,11,0.7)" font-family="Outfit,sans-serif" font-weight="700">NEUF · RECONDITIONNÉ</text><text x="90" y="230" text-anchor="middle" font-size="16" fill="#fcd34d" font-family="Outfit,sans-serif" font-weight="800">Dès 89 €</text><rect x="22" y="252" width="136" height="32" rx="16" fill="rgba(37,99,235,0.25)" stroke="rgba(37,99,235,0.35)" stroke-width="0.8"/><text x="90" y="272" text-anchor="middle" font-size="11" fill="#93c5fd" font-family="Outfit,sans-serif" font-weight="700">Voir en magasin →</text><rect x="62" y="310" width="56" height="5" rx="2.5" fill="rgba(255,255,255,0.12)"/></svg>
+          <div class="phone-label pl-gold">En vente</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS LIVE -->
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+  <div style="background:var(--dark);padding:28px 24px;text-align:center;">
+    <div id="stat-reparations" style="font-family:'Outfit',sans-serif;font-size:36px;font-weight:900;color:#c084fc;letter-spacing:-.03em;line-height:1;">248+</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px;font-weight:600;">Réparations effectuées</div>
+  </div>
+  <div style="background:var(--dark);padding:28px 24px;text-align:center;border-left:1px solid var(--line);border-right:1px solid var(--line);">
+    <div id="stat-clients" style="font-family:'Outfit',sans-serif;font-size:36px;font-weight:900;color:#f472b6;letter-spacing:-.03em;line-height:1;">194+</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px;font-weight:600;">Clients satisfaits</div>
+  </div>
+  <div style="background:var(--dark);padding:28px 24px;text-align:center;">
+    <div id="stat-note" style="font-family:'Outfit',sans-serif;font-size:36px;font-weight:900;color:#f59e0b;letter-spacing:-.03em;line-height:1;">4.9/5</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px;font-weight:600;">Note moyenne</div>
+  </div>
+</div>
+
+<!-- AVIS CLIENTS -->
+<section style="padding:80px 48px;background:var(--black);">
+  <div class="eyebrow reveal">Avis clients</div>
+  <h2 class="section-h reveal">Ce que disent nos clients</h2>
+  <p class="section-p reveal">Des centaines de clients nous font confiance pour leurs réparations et services.</p>
+  <div id="avis-wrap" style="display:flex;gap:16px;overflow-x:auto;padding-bottom:8px;">
+    <!-- Avis par défaut, remplacés dynamiquement par Supabase -->
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px;flex-shrink:0;width:280px;">
+      <div style="color:#f59e0b;font-size:16px;margin-bottom:8px;">★★★★★</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.65;margin-bottom:12px;">"Ecran changé en 1h, impeccable ! Je recommande vivement."</div>
+      <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.4);">Karim B. · iPhone 13</div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px;flex-shrink:0;width:280px;">
+      <div style="color:#f59e0b;font-size:16px;margin-bottom:8px;">★★★★★</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.65;margin-bottom:12px;">"Très professionnel, prix honnête et service rapide."</div>
+      <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.4);">Marie D. · Samsung S22</div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px;flex-shrink:0;width:280px;">
+      <div style="color:#f59e0b;font-size:16px;margin-bottom:8px;">★★★★★</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.65;margin-bottom:12px;">"Super service, mon téléphone comme neuf !"</div>
+      <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.4);">Ahmed T. · Xiaomi 12</div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-track">
+    <div class="ticker-item"><span>📱</span> Vente de téléphones</div>
+    <div class="ticker-item"><span>🔧</span> Réparation express</div>
+    <div class="ticker-item"><span>🖨️</span> Impression & photocopie</div>
+    <div class="ticker-item"><span>💸</span> Transfert Ria Money</div>
+    <div class="ticker-item"><span>📦</span> Service colis</div>
+    <div class="ticker-item"><span>💻</span> Réparation ordinateurs</div>
+    <div class="ticker-item"><span>🔋</span> Remplacement batterie</div>
+    <div class="ticker-item"><span>📍</span> Lille — Place Caulier</div>
+    <!-- duplicate -->
+    <div class="ticker-item"><span>📱</span> Vente de téléphones</div>
+    <div class="ticker-item"><span>🔧</span> Réparation express</div>
+    <div class="ticker-item"><span>🖨️</span> Impression & photocopie</div>
+    <div class="ticker-item"><span>💸</span> Transfert Ria Money</div>
+    <div class="ticker-item"><span>📦</span> Service colis</div>
+    <div class="ticker-item"><span>💻</span> Réparation ordinateurs</div>
+    <div class="ticker-item"><span>🔋</span> Remplacement batterie</div>
+    <div class="ticker-item"><span>📍</span> Lille — Place Caulier</div>
+  </div>
+</div>
+
+<!-- SERVICES -->
+<section id="services" class="section services-bg">
+  <div class="eyebrow reveal">Nos services</div>
+  <h2 class="section-title reveal">Tout ce dont vous avez besoin</h2>
+  <p class="section-sub reveal">Un seul endroit pour tous vos besoins en téléphonie, informatique et services du quotidien à Lille.</p>
+
+  <div class="svc-grid">
+    <div class="svc reveal">
+      <div class="svc-num">01</div>
+      <div class="svc-icon-ring ir-blue">📱</div>
+      <div class="svc-title">Vente téléphones & accessoires</div>
+      <p class="svc-desc">Smartphones neufs et reconditionnés, accessoires adaptés à tous les besoins et tous les budgets.</p>
+      <ul class="svc-items">
+        <li>Smartphones neufs et reconditionnés</li>
+        <li>Coques et protections d'écran</li>
+        <li>Chargeurs, câbles et batteries</li>
+        <li>Écouteurs et accessoires Bluetooth</li>
+        <li>Accessoires tablettes & informatique</li>
+      </ul>
+    </div>
+    <div class="svc reveal" style="transition-delay:.1s">
+      <div class="svc-num">02</div>
+      <div class="svc-icon-ring ir-gold">🖨️</div>
+      <div class="svc-title">Impression & photocopie</div>
+      <p class="svc-desc">Service d'impression pratique et rapide pour tous vos documents du quotidien.</p>
+      <ul class="svc-items">
+        <li>Impression de documents</li>
+        <li>Photocopies N&B et couleur</li>
+        <li>Impression depuis téléphone ou clé USB</li>
+        <li>CV, formulaires, billets, documents admin</li>
+      </ul>
+    </div>
+    <div class="svc reveal" style="transition-delay:.2s">
+      <div class="svc-num">03</div>
+      <div class="svc-icon-ring ir-green">💸</div>
+      <div class="svc-title">Transfert d'argent Ria</div>
+      <p class="svc-desc">Envoyez et recevez de l'argent à l'international rapidement et en toute sécurité.</p>
+      <ul class="svc-items">
+        <li>Envoi international</li>
+        <li>Réception rapide</li>
+        <li>Service sécurisé et fiable</li>
+        <li>Assistance sur place</li>
+      </ul>
+    </div>
+    <div class="svc reveal" style="transition-delay:.3s">
+      <div class="svc-num">04</div>
+      <div class="svc-icon-ring ir-purple">📦</div>
+      <div class="svc-title">Service colis</div>
+      <p class="svc-desc">Déposez ou retirez vos colis facilement dans notre point relais de proximité.</p>
+      <ul class="svc-items">
+        <li>Dépôt de colis</li>
+        <li>Retrait de colis</li>
+        <li>Service rapide et pratique</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- RÉPARATION -->
+<section id="reparation" class="section repair-bg">
+  <div class="eyebrow reveal">Réparation</div>
+  <h2 class="section-title reveal">Diagnostic & réparation<br>professionnelle</h2>
+  <p class="section-sub reveal">Nos techniciens prennent en charge vos appareils avec sérieux, rapidité et professionnalisme.</p>
+
+  <div class="repair-grid">
+    <div class="rcard reveal">
+      <div class="rcard-accent ra-blue"></div>
+      <div class="rcard-head">
+        <div class="rcard-title">📱 Smartphones</div>
+        <span class="rtag rtag-blue">Express</span>
+      </div>
+      <ul class="rlist">
+        <li><div class="rcheck rc-blue">✓</div>Changement d'écran</li>
+        <li><div class="rcheck rc-blue">✓</div>Remplacement de batterie</li>
+        <li><div class="rcheck rc-blue">✓</div>Réparation connecteur de charge</li>
+        <li><div class="rcheck rc-blue">✓</div>Déblocage et réinitialisation logicielle</li>
+        <li><div class="rcheck rc-blue">✓</div>Caméra, micro, haut-parleur, boutons</li>
+      </ul>
+    </div>
+    <div class="rcard reveal" style="transition-delay:.12s">
+      <div class="rcard-accent ra-purple"></div>
+      <div class="rcard-head">
+        <div class="rcard-title">💻 Ordinateurs</div>
+        <span class="rtag rtag-purple">Sur place</span>
+      </div>
+      <ul class="rlist">
+        <li><div class="rcheck rc-purple">✓</div>Réparation ordinateurs portables</li>
+        <li><div class="rcheck rc-purple">✓</div>Installation logiciels & systèmes</li>
+        <li><div class="rcheck rc-purple">✓</div>Nettoyage et optimisation</li>
+        <li><div class="rcheck rc-purple">✓</div>Suppression de virus</li>
+        <li><div class="rcheck rc-purple">✓</div>Diagnostic et dépannage</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- POURQUOI -->
+<section id="pourquoi" class="section why-bg">
+  <div class="why-layout">
+    <div class="why-left">
+      <div class="eyebrow reveal">Nos engagements</div>
+      <h2 class="section-title reveal">Pourquoi nous<br>choisir ?</h2>
+      <p class="section-sub reveal">Depuis notre ouverture, nous faisons de la satisfaction client notre priorité absolue. Service de proximité, conseils honnêtes, tarifs transparents.</p>
+      <a href="tel:0759101321" class="btn-primary reveal" style="display:inline-flex;align-self:flex-start">📞 Nous contacter</a>
+    </div>
+    <div class="why-items reveal" style="transition-delay:.1s">
+      <div class="witem">
+        <div class="wnum">01</div>
+        <div>
+          <div class="wtitle">Service de proximité à Lille</div>
+          <div class="wdesc">Situé au cœur de Lille, 20 Place Caulier — facilement accessible à tous.</div>
+        </div>
+      </div>
+      <div class="witem">
+        <div class="wnum">02</div>
+        <div>
+          <div class="wtitle">Interventions rapides</div>
+          <div class="wdesc">Réparations et services réalisés dans les meilleurs délais, souvent le jour même.</div>
+        </div>
+      </div>
+      <div class="witem">
+        <div class="wnum">03</div>
+        <div>
+          <div class="wtitle">Conseils personnalisés</div>
+          <div class="wdesc">Notre équipe vous oriente vers la meilleure solution selon votre budget et vos besoins.</div>
+        </div>
+      </div>
+      <div class="witem">
+        <div class="wnum">04</div>
+        <div>
+          <div class="wtitle">Tarifs compétitifs</div>
+          <div class="wdesc">Des prix justes et transparents, sans mauvaises surprises.</div>
+        </div>
+      </div>
+      <div class="witem">
+        <div class="wnum">05</div>
+        <div>
+          <div class="wtitle">Tout en un seul lieu</div>
+          <div class="wdesc">Vente, réparation, impression, transfert d'argent et colis — au même endroit.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact" class="section contact-bg">
+  <div class="eyebrow reveal">Nous trouver</div>
+  <h2 class="section-title reveal">Venez nous rendre visite</h2>
+  <p class="section-sub reveal">Notre équipe est disponible pour vous accueillir et répondre à toutes vos questions.</p>
+
+  <div class="contact-layout">
+    <div class="ccard reveal">
+      <div class="ccard-title">Coordonnées</div>
+      <div class="crows">
+        <div class="crow">
+          <div class="crow-icon">📍</div>
+          <div>
+            <div class="crow-label">Adresse</div>
+            <div class="crow-val">20 Place Caulier, 59800 Lille</div>
+          </div>
+        </div>
+        <div class="crow">
+          <div class="crow-icon">📞</div>
+          <div>
+            <div class="crow-label">Téléphone</div>
+            <div class="crow-val"><a href="tel:0759101321">07 59 10 13 21</a></div>
+          </div>
+        </div>
+        <div class="crow">
+          <div class="crow-icon">✉️</div>
+          <div>
+            <div class="crow-label">Email</div>
+            <div class="crow-val"><a href="mailto:phoneservice59800@gmail.com">phoneservice59800@gmail.com</a></div>
+          </div>
+        </div>
+      </div>
+      <a href="tel:0759101321" class="cta-call">📞 Appelez-nous maintenant</a>
+    </div>
+    <div class="map-block reveal" style="transition-delay:.12s">
+      <iframe src="https://www.openstreetmap.org/export/embed.html?bbox=3.0570%2C50.6310%2C3.0650%2C50.6360&layer=mapnik&marker=50.63353%2C3.06088" allowfullscreen loading="lazy" title="Phone Info Service Lille"></iframe>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Phone<span>Info</span> Service</div>
+  <ul class="footer-nav">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#reparation">Réparation</a></li>
+    <li><a href="#pourquoi">À propos</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div class="footer-copy">© 2025 — 20 Place Caulier, 59800 Lille</div>
+</footer>
+
+<style>
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+/* ── FLOATING BTN ── */
+#espace-btn {
+  position:fixed;bottom:28px;right:24px;z-index:8000;
+  background:linear-gradient(135deg,#c084fc,#f472b6);
+  color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;
+  border:none;border-radius:100px;padding:14px 22px;
+  cursor:pointer;display:flex;align-items:center;gap:8px;
+  box-shadow:0 0 20px rgba(192,132,252,.5),0 0 40px rgba(192,132,252,.2),0 8px 32px rgba(0,0,0,.4);
+  transition:transform .2s,box-shadow .2s;
+  animation:floatBtn 3s ease-in-out infinite;
+}
+#espace-btn:hover{transform:translateY(-3px) scale(1.04);box-shadow:0 0 30px rgba(192,132,252,.7),0 12px 40px rgba(0,0,0,.5)}
+@keyframes floatBtn{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.btn-dot{width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 8px #fff;animation:pulseDot 1.5s infinite}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
+
+/* ── POPUP OVERLAY ── */
+#client-overlay {
+  position:fixed;inset:0;z-index:9000;
+  background:rgba(0,0,0,.7);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  display:none;align-items:flex-end;justify-content:center;
+}
+#client-overlay.open{display:flex;animation:overlayIn .25s ease}
+@keyframes overlayIn{from{opacity:0}to{opacity:1}}
+
+/* ── POPUP PANEL ── */
+#client-panel {
+  width:100%;max-width:440px;
+  height:92vh;
+  background:#0e0b16;
+  border-radius:28px 28px 0 0;
+  border:1px solid rgba(192,132,252,.2);
+  border-bottom:none;
+  overflow:hidden;
+  display:flex;flex-direction:column;
+  box-shadow:0 -8px 60px rgba(192,132,252,.2);
+  animation:panelUp .35s cubic-bezier(.4,0,.2,1);
+}
+@keyframes panelUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+/* pill handle */
+#panel-handle{
+  width:40px;height:4px;border-radius:2px;
+  background:rgba(255,255,255,.15);
+  margin:12px auto 0;flex-shrink:0;cursor:pointer;
+}
+
+
+
+/* app content area */
+#client-app{flex:1;overflow:hidden;position:relative}
+#client-app-root{height:100%;overflow-y:auto}
+
+/* tab bar inside popup */
+#client-tabs{
+  display:flex;
+  background:rgba(14,11,22,.95);
+  border-top:1px solid rgba(255,255,255,.07);
+  flex-shrink:0;
+}
+</style>
+
+<!-- FLOATING BUTTON -->
+<button id="espace-btn" onclick="window.open('https://phone-info-client.netlify.app','_blank')">
+  <div class="btn-dot"></div>
+  Mon Espace Client
+</button>
+
+
+
+<script>
+/* ── REVEAL OBSERVER ── */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('in') });
+}, {threshold: 0.08});
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* ── REVEAL OBSERVER ── */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('in') });
+}, {threshold: 0.08});
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* ── SUPABASE ── */
+const SUPA_URL='https://byezhlpfykjxwvosewqf.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5ZXpobHBmeWtqeHd2b3Nld3FmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODk1NzI5MiwiZXhwIjoyMDk0NTMzMjkyfQ.VRmq9QSPAUJCJxi2qAAXlEMAFFLluOORxiuXQyqIHGU';
+const supaGet=async(path)=>{
+  const r=await fetch(SUPA_URL+'/rest/v1/'+path,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+  return r.ok?r.json():null;
+};
+
+/* ── CHARGER LES STATS ── */
+async function loadStats(){
+  const data=await supaGet('stats?select=*&limit=1');
+  if(!data||!data[0])return;
+  const s=data[0];
+  const elRep=document.getElementById('stat-reparations');
+  const elCli=document.getElementById('stat-clients');
+  const elNote=document.getElementById('stat-note');
+  if(elRep)animCount(elRep,s.reparations_total);
+  if(elCli)animCount(elCli,s.clients_total);
+  if(elNote&&s.note_moyenne)elNote.textContent=s.note_moyenne+'/5';
+}
+
+function animCount(el,target){
+  let cur=0;const step=Math.ceil(target/60);
+  const t=setInterval(()=>{cur=Math.min(cur+step,target);el.textContent=cur+'+';if(cur>=target)clearInterval(t);},30);
+}
+
+/* ── CHARGER LES AVIS ── */
+async function loadAvis(){
+  const data=await supaGet('avis?valide=eq.true&order=created_at.desc&limit=5');
+  if(!data||!data.length)return;
+  const wrap=document.getElementById('avis-wrap');
+  if(!wrap)return;
+  wrap.innerHTML='';
+  data.forEach(a=>{
+    const stars='★'.repeat(a.note)+'☆'.repeat(5-a.note);
+    wrap.innerHTML+=`
+      <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px;flex-shrink:0;width:280px;">
+        <div style="color:#f59e0b;font-size:16px;margin-bottom:8px;">${stars}</div>
+        <div style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.65;margin-bottom:12px;">"${a.commentaire}"</div>
+        <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.4);">${a.nom_affiche} · ${a.appareil||'Client'}</div>
+      </div>`;
+  });
+}
+
+/* ── INIT ── */
+loadStats();
+loadAvis();
+</script>
+
+<!-- REACT FOR CLIENT APP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+</script>
+</body>
+</html>

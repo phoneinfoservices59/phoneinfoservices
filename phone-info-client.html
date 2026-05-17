@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Phone Info Service</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body,#root{height:100%;background:#0e0b16}
+body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;overscroll-behavior:none;color:#f0e8ff}
+::-webkit-scrollbar{display:none}
+input,select,textarea{font-family:inherit;-webkit-appearance:none;appearance:none;border-radius:0}
+input:focus,select:focus,textarea:focus{outline:none}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{0%{transform:scale(.88);opacity:0}60%{transform:scale(1.03)}100%{transform:scale(1);opacity:1}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Safe area for iPhone notch & home bar */
+body{
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+
+/* Prevent zoom on input focus iOS */
+input,select,textarea{font-size:16px!important}
+
+/* Smooth scrolling */
+div{-webkit-overflow-scrolling:touch}
+
+/* Active state for tap feedback */
+button:active{opacity:.75!important;transform:scale(.97)!important}
+div[onClick]:active,div[onclick]:active{opacity:.8}
+
+/* Max width centered on tablet */
+#root>div{max-width:430px;margin:0 auto}
+
+@media(max-width:380px){
+  /* Very small phones */
+  div[style*="fontSize:24"]{font-size:20px!important}
+  div[style*="fontSize:22"]{font-size:18px!important}
+  div[style*="padding:\"20px 16px"]{padding:14px 12px!important}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+var SUPA_URL="https://byezhlpfykjxwvosewqf.supabase.co";
+var SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5ZXpobHBmeWtqeHd2b3Nld3FmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODk1NzI5MiwiZXhwIjoyMDk0NTMzMjkyfQ.VRmq9QSPAUJCJxi2qAAXlEMAFFLluOORxiuXQyqIHGU";
+var HDRS={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+
+var db={
+  searchRep:async function(ref){
+    var r=await fetch(SUPA_URL+"/rest/v1/reparations?reference=eq."+encodeURIComponent(ref.toUpperCase())+"&select=*",{headers:HDRS});
+    var d=r.ok?await r.json():null;
+    return d&&d[0]?d[0]:null;
+  },
+  getHistorique:async function(telephone){
+    var tel=telephone.replace(/\s/g,"");
+    var r=await fetch(SUPA_URL+"/rest/v1/reparations?select=*,clients!inner(telephone)&clients.telephone=eq."+tel+"&order=created_at.desc",{headers:HDRS});
+    return r.ok?r.json():[];
+  },
+  getTarifs:async function(){
+    var r=await fetch(SUPA_URL+"/rest/v1/tarifs?actif=eq.true&order=marque.asc,ordre.asc",{headers:HDRS});
+    return r.ok?r.json():null;
+  },
+  getOrCreateClient:async function(nom,telephone,email){
+    var tel=telephone.replace(/\s/g,"");
+    var r=await fetch(SUPA_URL+"/rest/v1/clients?telephone=eq."+tel+"&select=id",{headers:HDRS});
+    var ex=r.ok?await r.json():null;
+    if(ex&&ex[0])return ex[0].id;
+    var cr=await fetch(SUPA_URL+"/rest/v1/clients",{method:"POST",headers:{...HDRS,"Prefer":"return=representation"},body:JSON.stringify({nom:nom,telephone:tel,email:email||""})});
+    var d=cr.ok?await cr.json():null;
+    return d&&d[0]?d[0].id:null;
+  },
+  submitDevis:async function(data){
+    await fetch(SUPA_URL+"/rest/v1/devis",{method:"POST",headers:{...HDRS,"Prefer":"return=minimal"},body:JSON.stringify(data)});
+  },
+  submitRdv:async function(data){
+    await fetch(SUPA_URL+"/rest/v1/rendez_vous",{method:"POST",headers:{...HDRS,"Prefer":"return=minimal"},body:JSON.stringify(data)});
+  },
+  submitAvis:async function(data){
+    await fetch(SUPA_URL+"/rest/v1/avis",{method:"POST",headers:{...HDRS,"Prefer":"return=minimal"},body:JSON.stringify(data)});
+  },
+};
+
+var h = React.createElement;
+var useState = React.useState;
+var useEffect = React.useEffect;
+var Fragment = React.Fragment;
+
+var V = {
+  bg:"#0e0b16",surface:"#17112a",card:"#1e1538",card2:"#261a48",
+  border:"#3d2870",border2:"#6040b0",
+  text:"#f5eeff",muted:"#a090c8",dim:"#5a4890",
+  accent:"#c084fc",pink:"#f472b6",
+  grad:"linear-gradient(135deg,#c084fc,#f472b6)",
+  green:"#34d399",greenBg:"#042e1c",greenBr:"#0a5c38",
+  orange:"#fb923c",orangeBg:"#2b1400",orangeBr:"#6b3010",
+  yellow:"#fbbf24",yellowBg:"#2b1a00",yellowBr:"#6b4200",
+  red:"#f43f5e",redBg:"#2b0016",redBr:"#6b0030",
+};
+
+var glow = function(c){ return "0 0 20px "+c+"50,0 0 40px "+c+"20"; };
+var glowS = function(c){ return "0 4px 20px "+c+"40"; };
+
+var STATUTS = {
+  recu:       {l:"Recu",            e:"📥",c:V.muted, bg:V.card,     br:V.border,   pct:10 },
+  diagnostic: {l:"Diagnostic",      e:"🔍",c:V.yellow,bg:V.yellowBg, br:V.yellowBr, pct:25 },
+  commande:   {l:"Piece commandee", e:"📦",c:V.orange,bg:V.orangeBg, br:V.orangeBr, pct:45 },
+  inprogress: {l:"En reparation",   e:"🔧",c:V.accent,bg:"#2a0f45",  br:"#6b2fa0",  pct:70 },
+  ready:      {l:"Pret a recuperer",e:"✅",c:V.green, bg:V.greenBg,  br:V.greenBr,  pct:100},
+  delivered:  {l:"Recupere",        e:"🎉",c:V.dim,   bg:V.card,     br:V.border,   pct:100},
+};
+
+var HEURES = ["09:00","09:30","10:00","10:30","11:00","11:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30"];
+var MARQUES = ["Apple","Samsung","Xiaomi","Autre"];
+var STEPS_RDV = ["recu","diagnostic","commande","inprogress","ready"];
+
+function smsOpen(tel,msg){
+  var t=tel.replace(/\s/g,"");
+  var enc=encodeURIComponent(msg);
+  var url=/iPhone|iPad|iPod/.test(navigator.userAgent)?"sms:"+t+"&body="+enc:"sms:"+t+"?body="+enc;
+  window.open(url,"_blank");
+}
+
+function merge(){var r={};for(var i=0;i<arguments.length;i++){var a=arguments[i];if(a)for(var k in a)r[k]=a[k];}return r;}
+
+/* TOAST */
+function Toast(p){
+  useEffect(function(){var t=setTimeout(p.onClose,3500);return function(){clearTimeout(t);}},[]);
+  return h("div",{style:{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",zIndex:9999,background:V.grad,backdropFilter:"blur(20px)",borderRadius:14,padding:"12px 20px",color:"#fff",fontWeight:600,fontSize:14,boxShadow:"0 8px 32px rgba(0,0,0,.5)",display:"flex",alignItems:"center",gap:8,maxWidth:320,width:"88%",animation:"popIn .3s ease"}},
+    h("span",null,"✅")," ",p.msg
+  );
+}
+
+/* CARD */
+function Card(p){
+  return h("div",{onClick:p.onClick,style:merge({background:V.card,borderRadius:20,padding:18,border:"1px solid "+V.border,boxShadow:"0 2px 24px rgba(0,0,0,.3)"},p.style)},p.children);
+}
+
+/* BTN */
+function Btn(p){
+  var bg=p.disabled?"rgba(255,255,255,.06)":p.grad?V.grad:p.green?"linear-gradient(135deg,"+V.green+",#0d9e60)":p.outline?"transparent":V.grad;
+  var col=p.disabled?V.dim:p.outline?V.accent:"#fff";
+  var br=p.outline?"1.5px solid "+V.accent:"none";
+  return h("button",{onClick:p.disabled?null:p.onClick,style:merge({width:"100%",padding:p.small?"11px":"15px",borderRadius:p.small?12:16,background:bg,border:br,cursor:p.disabled?"not-allowed":"pointer",fontSize:p.small?13:16,fontWeight:700,color:col,fontFamily:"inherit",letterSpacing:"-.01em",boxShadow:p.disabled||p.outline?"none":glowS(V.accent),opacity:p.disabled?.45:1,transition:"all .15s"},p.style)},p.children);
+}
+
+/* INPUT */
+function Inp(p){
+  var s={width:"100%",background:"rgba(255,255,255,.06)",border:"1px solid "+V.border,borderRadius:12,padding:"13px 16px",color:V.text,fontSize:15,boxSizing:"border-box",WebkitAppearance:"none"};
+  return h("div",{style:{marginBottom:14}},
+    p.label&&h("div",{style:{fontSize:12,fontWeight:600,color:V.muted,marginBottom:6,letterSpacing:".02em"}},p.label),
+    p.multiline
+      ?h("textarea",{style:merge(s,{resize:"none",height:80,lineHeight:1.6}),value:p.value,onChange:p.onChange,placeholder:p.placeholder})
+      :h("input",{style:s,type:p.type||"text",value:p.value,onChange:p.onChange,placeholder:p.placeholder,autoFocus:p.autoFocus})
+  );
+}
+
+/* ===== ACCUEIL ===== */
+function Accueil(p){
+  var actions=[
+    {id:"suivi", e:"🔍",t:"Suivi",   s:"Votre reparation",   c:V.accent, g:"linear-gradient(135deg,rgba(192,132,252,.18),rgba(192,132,252,.05))"},
+    {id:"rdv",   e:"📅",t:"RDV",     s:"Prendre rendez-vous",c:V.pink,   g:"linear-gradient(135deg,rgba(244,114,182,.18),rgba(244,114,182,.05))"},
+    {id:"devis", e:"📋",t:"Devis",   s:"Estimation gratuite",c:V.yellow, g:"linear-gradient(135deg,rgba(251,191,36,.18),rgba(251,191,36,.05))"},
+    {id:"tarifs",e:"💰",t:"Tarifs",  s:"Nos prix",           c:V.green,  g:"linear-gradient(135deg,rgba(52,211,153,.18),rgba(52,211,153,.05))"},
+  ];
+  var infos=[
+    {e:"📍",v:"20 Place Caulier, 59800 Lille",href:null,              c:V.accent},
+    {e:"📞",v:"07 59 10 13 21",               href:"tel:0759101321",  c:V.pink},
+    {e:"🕐",v:"Lun - Sam  9h - 19h",          href:null,              c:V.green},
+    {e:"✉",  v:"phoneservice59800@gmail.com",  href:"mailto:phoneservice59800@gmail.com",c:V.yellow},
+  ];
+  return h("div",{style:{padding:"20px 16px 110px",animation:"fadeUp .4s ease"}},
+    h("div",{style:{background:"linear-gradient(135deg,rgba(192,132,252,.14),rgba(244,114,182,.08))",border:"1px solid rgba(192,132,252,.22)",borderRadius:28,padding:"32px 22px",marginBottom:20,position:"relative",overflow:"hidden",textAlign:"center"}},
+      h("div",{style:{position:"absolute",top:-50,right:-50,width:180,height:180,borderRadius:"50%",background:"radial-gradient(circle,rgba(192,132,252,.2),transparent 70%)",pointerEvents:"none"}}),
+      h("div",{style:{position:"absolute",bottom:-40,left:-40,width:140,height:140,borderRadius:"50%",background:"radial-gradient(circle,rgba(244,114,182,.15),transparent 70%)",pointerEvents:"none"}}),
+      h("div",{style:{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(192,132,252,.12)",border:"1px solid rgba(192,132,252,.25)",borderRadius:100,padding:"5px 14px",fontSize:11,fontWeight:700,color:"rgba(192,132,252,.9)",letterSpacing:".08em",textTransform:"uppercase",marginBottom:16}},"📍 Lille — Place Caulier"),
+      h("div",{style:{fontSize:28,fontWeight:900,color:V.text,lineHeight:1.2,letterSpacing:"-.03em",marginBottom:10}},"Votre appareil entre de bonnes mains"),
+      h("div",{style:{fontSize:13,color:V.muted,lineHeight:1.65,marginBottom:24}},"Reparation rapide  ·  Vente  ·  Services du quotidien"),
+      h("a",{href:"tel:0759101321",style:{display:"inline-flex",alignItems:"center",justifyContent:"center",gap:8,background:V.grad,color:"#fff",fontWeight:700,fontSize:15,padding:"13px 28px",borderRadius:100,textDecoration:"none",boxShadow:glow(V.accent)}},"📞 07 59 10 13 21")
+    ),
+    h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}},
+      actions.map(function(it){
+        return h("div",{key:it.id,onClick:function(){p.onNav(it.id);},style:{background:it.g,border:"1px solid "+it.c+"30",borderRadius:22,padding:"20px 16px",cursor:"pointer",boxShadow:"0 4px 20px "+it.c+"15"}},
+          h("div",{style:{fontSize:30,marginBottom:10}},it.e),
+          h("div",{style:{fontSize:16,fontWeight:800,color:it.c,letterSpacing:"-.02em"}},it.t),
+          h("div",{style:{fontSize:11,color:V.muted,marginTop:3}},it.s)
+        );
+      })
+    ),
+    h(Card,{style:{padding:0,overflow:"hidden"}},
+      h("div",{style:{padding:"14px 18px",borderBottom:"1px solid "+V.border,display:"flex",alignItems:"center",gap:10}},
+        h("div",{style:{width:32,height:32,borderRadius:9,background:V.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}},"📱"),
+        h("div",{style:{fontSize:14,fontWeight:700,color:V.text}},"Phone Info Service")
+      ),
+      infos.map(function(r,i){
+        return h("a",{key:i,href:r.href||undefined,style:{display:"flex",alignItems:"center",gap:14,padding:"13px 18px",borderBottom:i<infos.length-1?"1px solid "+V.border:"none",textDecoration:"none"}},
+          h("div",{style:{width:30,height:30,borderRadius:8,background:r.c+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}},r.e),
+          h("div",{style:{fontSize:13,color:r.href?r.c:V.muted,fontWeight:r.href?600:400,lineHeight:1.4}},r.v)
+        );
+      })
+    )
+  );
+}
+
+/* ===== SUIVI ===== */
+function Suivi(){
+  var s1=useState(""); var ref=s1[0]; var setRef=s1[1];
+  var s2=useState(null); var res=s2[0]; var setRes=s2[1];
+  var s3=useState(false); var loading=s3[0]; var setLoading=s3[1];
+  var s4=useState(""); var err=s4[0]; var setErr=s4[1];
+
+  function chercher(){
+    if(!ref.trim()){setErr("Entrez votre reference");return;}
+    setLoading(true);setErr("");setRes(null);
+    db.searchRep(ref.trim()).then(function(f){
+      if(f){
+        setRes({
+          ref:f.reference,
+          appareil:f.appareil,
+          panne:f.panne||"",
+          prix:f.prix||"",
+          statut:f.statut,
+          date:f.created_at?f.created_at.split("T")[0]:"--"
+        });
+      }else{
+        setErr("Reference introuvable. Verifiez votre SMS.");
+      }
+      setLoading(false);
+    }).catch(function(){
+      setErr("Erreur reseau. Verifiez votre connexion.");
+      setLoading(false);
+    });
+  }
+
+  var st=res?(STATUTS[res.statut]||STATUTS.recu):null;
+
+  return h("div",{style:{padding:"20px 16px 110px",animation:"fadeUp .4s ease"}},
+    h("div",{style:{fontSize:24,fontWeight:800,color:V.text,letterSpacing:"-.03em",marginBottom:4}},"Suivi reparation"),
+    h("div",{style:{fontSize:13,color:V.muted,marginBottom:20}},"Entrez la reference recue par SMS"),
+
+    h(Card,{style:{marginBottom:16}},
+      h("div",{style:{display:"flex",alignItems:"center",gap:12,background:"rgba(255,255,255,.05)",borderRadius:14,border:"1px solid "+(ref?V.accent:V.border),padding:"0 16px",marginBottom:12}},
+        h("span",{style:{fontSize:18,flexShrink:0}},"🔍"),
+        h("input",{style:{flex:1,background:"none",border:"none",color:V.text,fontSize:18,fontWeight:700,letterSpacing:".08em",padding:"14px 0",textTransform:"uppercase",WebkitAppearance:"none",outline:"none"},
+          placeholder:"PIS-XXX",value:ref,
+          onChange:function(e){setRef(e.target.value.toUpperCase());},
+          onKeyDown:function(e){if(e.key==="Enter")chercher();}
+        }),
+        ref&&h("div",{onClick:function(){setRef("");setRes(null);setErr("");},style:{color:V.muted,cursor:"pointer",fontSize:22,padding:"0 4px"}},"×")
+      ),
+      err&&h("div",{style:{fontSize:12,color:V.red,marginBottom:10,paddingLeft:4}},err),
+      h(Btn,{onClick:chercher,grad:true,disabled:loading},
+        loading
+          ?h("span",{style:{display:"inline-flex",alignItems:"center",gap:8,justifyContent:"center"}},
+              h("span",{style:{width:16,height:16,border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin .7s linear infinite"}}),
+              "Recherche..."
+            )
+          :"🔍  Rechercher"
+      )
+    ),
+
+    !res&&!loading&&h(Card,{style:{background:"rgba(192,132,252,.06)",border:"1px solid rgba(192,132,252,.2)"}},
+      h("div",{style:{fontSize:13,fontWeight:700,color:V.accent,marginBottom:6}},"💡 Ou trouver ma reference ?"),
+      h("div",{style:{fontSize:13,color:V.muted,lineHeight:1.7}},"Votre reference (ex: PIS-142) vous a ete envoyee par SMS lors du depot de votre appareil.")
+    ),
+
+    res&&h("div",{style:{animation:"fadeUp .35s ease"}},
+      h("div",{style:{background:"linear-gradient(135deg,"+st.bg+","+V.card+")",border:"2px solid "+st.br,borderRadius:24,padding:"22px 20px",marginBottom:14,boxShadow:glow(st.c)}},
+        h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}},
+          h("div",null,
+            h("div",{style:{fontSize:11,fontWeight:600,color:V.muted,letterSpacing:".06em",marginBottom:4}},"REF. "+res.ref),
+            h("div",{style:{fontSize:20,fontWeight:800,color:V.text,letterSpacing:"-.02em"}},res.appareil)
+          ),
+          h("div",{style:{fontSize:38}},st.e)
+        ),
+        h("div",{style:{fontSize:17,fontWeight:800,color:st.c,marginBottom:16}},st.l),
+        h("div",{style:{height:6,background:"rgba(255,255,255,.08)",borderRadius:3,overflow:"hidden",marginBottom:6}},
+          h("div",{style:{height:"100%",width:st.pct+"%",background:V.grad,borderRadius:3,transition:"width 1.2s cubic-bezier(.4,0,.2,1)"}})
+        ),
+        h("div",{style:{display:"flex",justifyContent:"space-between",fontSize:10,color:V.dim,fontWeight:600}},
+          h("span","Recu"),h("span","Diagno."),h("span","Repar."),h("span","Pret")
+        )
+      ),
+
+      h(Card,{style:{marginBottom:14}},
+        h("div",{style:{fontSize:11,fontWeight:700,color:V.muted,letterSpacing:".08em",textTransform:"uppercase",marginBottom:14}},"Avancement"),
+        STEPS_RDV.map(function(e,i){
+          var s=STATUTS[e];
+          var done=STEPS_RDV.indexOf(res.statut)>=i;
+          var cur=res.statut===e;
+          return h("div",{key:e,style:{display:"flex",gap:14,alignItems:"flex-start",marginBottom:i<STEPS_RDV.length-1?14:0}},
+            h("div",{style:{display:"flex",flexDirection:"column",alignItems:"center"}},
+              h("div",{style:{width:34,height:34,borderRadius:"50%",flexShrink:0,background:done?s.bg:"rgba(255,255,255,.04)",border:"2px solid "+(done?s.br:V.border),display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,boxShadow:cur?glow(s.c):"none"}},done?s.e:""),
+              i<STEPS_RDV.length-1&&h("div",{style:{width:2,height:14,marginTop:3,background:done?s.c:V.border,borderRadius:1}})
+            ),
+            h("div",{style:{paddingTop:6}},
+              h("div",{style:{fontSize:14,fontWeight:700,color:done?s.c:V.dim,letterSpacing:"-.01em"}},s.l),
+              cur&&h("div",{style:{fontSize:11,color:V.muted,marginTop:2}},"En cours")
+            )
+          );
+        })
+      ),
+
+      h(Card,{style:{padding:0,overflow:"hidden",marginBottom:14}},
+        [{l:"Appareil",v:res.appareil},{l:"Panne",v:res.panne},{l:"Depose le",v:res.date},{l:"Prix",v:res.prix+"€",c:V.green}]
+          .map(function(r,i,a){
+            return h("div",{key:i,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"13px 18px",borderBottom:i<a.length-1?"1px solid "+V.border:"none"}},
+              h("span",{style:{fontSize:13,color:V.muted}},r.l),
+              h("span",{style:{fontSize:14,fontWeight:700,color:r.c||V.text}},r.v)
+            );
+          })
+      ),
+
+      res.statut==="ready"&&h("div",{style:{background:V.greenBg,border:"1.5px solid "+V.greenBr,borderRadius:20,padding:"18px 20px",marginBottom:14}},
+        h("div",{style:{fontSize:16,fontWeight:800,color:V.green,marginBottom:6}},"✅ Pret a recuperer !"),
+        h("div",{style:{fontSize:13,color:V.muted,lineHeight:1.65,marginBottom:14}},"Venez le recuperer au 20 Place Caulier, Lille. Lun-Sam, 9h-19h."),
+        h("a",{href:"tel:0759101321",style:{display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"13px",borderRadius:14,background:"linear-gradient(135deg,"+V.green+",#0d9e60)",color:"#fff",fontWeight:700,fontSize:14,textDecoration:"none"}},"📞 Appeler le magasin")
+      )
+    )
+  );
+}
+
+/* ===== RDV ===== */
+function Rdv(p){
+  var s1=useState(1); var step=s1[0]; var setStep=s1[1];
+  var s2=useState({nom:"",tel:"",email:"",appareil:"",panne:"",date:"",heure:"10:00"});
+  var form=s2[0]; var setForm=s2[1];
+  var s3=useState(false); var done=s3[0]; var setDone=s3[1];
+
+  function set(k,v){setForm(function(f){var n=merge(f);n[k]=v;return n;});}
+
+  function getMinDate(){var d=new Date();d.setDate(d.getDate()+1);return d.toISOString().split("T")[0];}
+
+  async function envoyer(){
+    var clientId=await db.getOrCreateClient(form.nom,form.tel,form.email);
+    var ref="RDV-"+Math.floor(Math.random()*9000+1000);
+    await db.submitRdv({
+      client_id:clientId,
+      appareil:form.appareil,
+      panne:form.panne||"",
+      date_rdv:form.date,
+      heure_rdv:form.heure,
+      statut:"attente"
+    });
+    var msg="RDV DEMANDE\nRef: "+ref+"\nNom : "+form.nom+"\nTel : "+form.tel+"\nAppareil : "+form.appareil+"\nPanne : "+(form.panne||"N/A")+"\nDate : "+form.date+" a "+form.heure+"\nApp Phone Info Service";
+    smsOpen("0759101321",msg);
+    setDone(true);
+    p.onNotif("Demande de RDV envoyee !");
+  }
+
+  function reset(){setDone(false);setStep(1);setForm({nom:"",tel:"",email:"",appareil:"",panne:"",date:"",heure:"10:00"});}
+
+  if(done) return h("div",{style:{padding:"60px 20px",display:"flex",flexDirection:"column",alignItems:"center",textAlign:"center",animation:"popIn .4s ease"}},
+    h("div",{style:{fontSize:72,marginBottom:20}},"🗓"),
+    h("div",{style:{fontSize:24,fontWeight:800,color:V.green,marginBottom:8,letterSpacing:"-.03em"}},"Demande envoyee !"),
+    h("div",{style:{fontSize:14,color:V.muted,lineHeight:1.7,marginBottom:28,maxWidth:280}},"Nous vous confirmerons votre RDV par SMS rapidement."),
+    h(Card,{style:{width:"100%",padding:0,overflow:"hidden",marginBottom:20}},
+      [{l:"Client",v:form.nom},{l:"Telephone",v:form.tel},{l:"Appareil",v:form.appareil},{l:"Date",v:form.date+" a "+form.heure}]
+        .map(function(r,i,a){
+          return h("div",{key:i,style:{display:"flex",justifyContent:"space-between",padding:"12px 18px",borderBottom:i<a.length-1?"1px solid "+V.border:"none"}},
+            h("span",{style:{fontSize:13,color:V.muted}},r.l),
+            h("span",{style:{fontSize:13,fontWeight:600,color:V.text}},r.v)
+          );
+        })
+    ),
+    h(Btn,{onClick:reset,outline:true,style:{maxWidth:220}},"Nouveau RDV")
+  );
+
+  var stepDefs=[{n:1,l:"Vous"},{n:2,l:"Appareil"},{n:3,l:"Creneau"}];
+
+  return h("div",{style:{padding:"20px 16px 110px",animation:"fadeUp .4s ease"}},
+    h("div",{style:{fontSize:24,fontWeight:800,color:V.text,letterSpacing:"-.03em",marginBottom:4}},"Prendre un RDV"),
+    h("div",{style:{fontSize:13,color:V.muted,marginBottom:20}},"Reservez votre creneau en 3 etapes"),
+
+    h("div",{style:{display:"flex",gap:8,marginBottom:24,alignItems:"center"}},
+      stepDefs.map(function(s,i){
+        return [
+          h("div",{key:s.n,style:{display:"flex",alignItems:"center",gap:6}},
+            h("div",{style:{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,background:step>=s.n?V.grad:"rgba(255,255,255,.08)",color:step>=s.n?"#fff":V.dim,boxShadow:step===s.n?glow(V.accent):"none",transition:"all .3s"}},step>s.n?"✓":s.n),
+            h("div",{style:{fontSize:13,fontWeight:step===s.n?700:400,color:step===s.n?V.text:V.dim}},s.l)
+          ),
+          i<stepDefs.length-1&&h("div",{key:"l"+i,style:{flex:1,height:1.5,background:step>s.n?V.grad:V.border,borderRadius:1}})
+        ];
+      }).flat()
+    ),
+
+    step===1&&h("div",{style:{animation:"fadeUp .3s ease"}},
+      h(Card,{style:{marginBottom:16}},
+        h("div",{style:{fontSize:14,fontWeight:700,color:V.text,marginBottom:14}},"Vos coordonnees"),
+        h(Inp,{label:"Nom complet *",value:form.nom,onChange:function(e){set("nom",e.target.value);},placeholder:"Mohamed Benali"}),
+        h(Inp,{label:"Telephone *",value:form.tel,onChange:function(e){set("tel",e.target.value);},placeholder:"06 12 34 56 78",type:"tel"}),
+        h(Inp,{label:"Email (optionnel)",value:form.email,onChange:function(e){set("email",e.target.value);},placeholder:"vous@email.com",type:"email"})
+      ),
+      h(Btn,{onClick:function(){if(form.nom&&form.tel)setStep(2);},grad:true,disabled:!form.nom||!form.tel},"Suivant  →")
+    ),
+
+    step===2&&h("div",{style:{animation:"fadeUp .3s ease"}},
+      h(Card,{style:{marginBottom:16}},
+        h("div",{style:{fontSize:14,fontWeight:700,color:V.text,marginBottom:14}},"Votre appareil"),
+        h(Inp,{label:"Appareil *",value:form.appareil,onChange:function(e){set("appareil",e.target.value);},placeholder:"iPhone 14, Galaxy S22..."}),
+        h(Inp,{label:"Probleme constate",value:form.panne,onChange:function(e){set("panne",e.target.value);},placeholder:"Ecran casse, batterie...",multiline:true})
+      ),
+      h("div",{style:{display:"flex",gap:10}},
+        h(Btn,{onClick:function(){setStep(1);},outline:true,style:{maxWidth:100}},"←"),
+        h(Btn,{onClick:function(){if(form.appareil)setStep(3);},grad:true,disabled:!form.appareil},"Suivant  →")
+      )
+    ),
+
+    step===3&&h("div",{style:{animation:"fadeUp .3s ease"}},
+      h(Card,{style:{marginBottom:16}},
+        h("div",{style:{fontSize:14,fontWeight:700,color:V.text,marginBottom:14}},"Votre creneau"),
+        h(Inp,{label:"Date souhaitee *",value:form.date,onChange:function(e){set("date",e.target.value);},type:"date"}),
+        h("div",{style:{fontSize:12,fontWeight:600,color:V.muted,marginBottom:8}},"Heure souhaitee"),
+        h("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:4}},
+          HEURES.map(function(hh){
+            var active=form.heure===hh;
+            return h("div",{key:hh,onClick:function(){set("heure",hh);},style:{padding:"9px 2px",borderRadius:10,textAlign:"center",fontSize:13,fontWeight:600,cursor:"pointer",background:active?V.grad:"rgba(255,255,255,.05)",color:active?"#fff":V.muted,border:"1px solid "+(active?V.accent:V.border),boxShadow:active?glowS(V.accent):"none"}},hh);
+          })
+        )
+      ),
+      h("div",{style:{background:"rgba(52,211,153,.08)",border:"1px solid "+V.greenBr,borderRadius:14,padding:"12px 16px",fontSize:13,color:V.green,marginBottom:16,lineHeight:1.6}},"📱 Votre demande sera envoyee par SMS au magasin."),
+      h("div",{style:{display:"flex",gap:10}},
+        h(Btn,{onClick:function(){setStep(2);},outline:true,style:{maxWidth:100}},"←"),
+        h(Btn,{onClick:function(){if(form.date)envoyer();},grad:true,disabled:!form.date},"📱  Envoyer la demande")
+      )
+    )
+  );
+}
+
+/* ===== DEVIS ===== */
+function Devis(p){
+  var s1=useState({nom:"",tel:"",marque:"Apple",appareil:"",panne:"",details:""});
+  var form=s1[0]; var setForm=s1[1];
+  var s2=useState(false); var done=s2[0]; var setDone=s2[1];
+  var s3=useState(false); var loading=s3[0]; var setLoading=s3[1];
+
+  function set(k,v){setForm(function(f){var n=merge(f);n[k]=v;return n;});}
+  var ok=form.nom&&form.tel&&form.appareil&&form.panne;
+
+  async function envoyer(){
+    if(!ok)return;
+    setLoading(true);
+    try{
+      var clientId=await db.getOrCreateClient(form.nom,form.tel,"");
+      var ref="DV-"+Math.floor(Math.random()*9000+1000);
+      await db.submitDevis({
+        reference:ref,
+        client_id:clientId,
+        appareil:form.appareil,
+        marque:form.marque,
+        panne:form.panne,
+        details:form.details||"",
+        statut:"nouveau"
+      });
+      var msg="DEMANDE DEVIS\nRef: "+ref+"\nNom : "+form.nom+"\nTel : "+form.tel+"\nAppareil : "+form.marque+" "+form.appareil+"\nPanne : "+form.panne+(form.details?"\nDetails : "+form.details:"")+"\nApp Phone Info Service";
+      smsOpen("0759101321",msg);
+      setDone(true);setLoading(false);
+      p.onNotif("Devis envoye !");
+    }catch(e){
+      setLoading(false);
+      p.onNotif("Erreur - reessayez");
+    }
+  }
+
+  if(done) return h("div",{style:{padding:"60px 20px",display:"flex",flexDirection:"column",alignItems:"center",textAlign:"center",animation:"popIn .4s ease"}},
+    h("div",{style:{fontSize:72,marginBottom:20}},"📋"),
+    h("div",{style:{fontSize:24,fontWeight:800,color:V.yellow,marginBottom:8,letterSpacing:"-.03em"}},"Devis demande !"),
+    h("div",{style:{fontSize:14,color:V.muted,lineHeight:1.7,marginBottom:28,maxWidth:280}},"Notre technicien vous repondra par SMS avec le prix et le delai estimes."),
+    h("a",{href:"tel:0759101321",style:{display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"14px 28px",borderRadius:16,background:V.grad,color:"#fff",fontWeight:700,fontSize:15,textDecoration:"none",marginBottom:12,boxShadow:glow(V.accent)}},"📞 Appeler directement"),
+    h(Btn,{onClick:function(){setDone(false);setForm({nom:"",tel:"",marque:"Apple",appareil:"",panne:"",details:""});},outline:true,style:{maxWidth:200}},"Nouvelle demande")
+  );
+
+  return h("div",{style:{padding:"20px 16px 110px",animation:"fadeUp .4s ease"}},
+    h("div",{style:{fontSize:24,fontWeight:800,color:V.text,letterSpacing:"-.03em",marginBottom:4}},"Demander un devis"),
+    h("div",{style:{fontSize:13,color:V.muted,marginBottom:20}},"Gratuit - Sans engagement - Reponse SMS rapide"),
+    h(Card,{style:{marginBottom:14}},
+      h("div",{style:{fontSize:14,fontWeight:700,color:V.text,marginBottom:14}},"Vos coordonnees"),
+      h(Inp,{label:"Nom complet *",value:form.nom,onChange:function(e){set("nom",e.target.value);},placeholder:"Mohamed Benali"}),
+      h(Inp,{label:"Telephone *",value:form.tel,onChange:function(e){set("tel",e.target.value);},placeholder:"06 12 34 56 78",type:"tel"})
+    ),
+    h(Card,{style:{marginBottom:14}},
+      h("div",{style:{fontSize:14,fontWeight:700,color:V.text,marginBottom:14}},"Votre appareil"),
+      h("div",{style:{fontSize:12,fontWeight:600,color:V.muted,marginBottom:8}},"Marque"),
+      h("div",{style:{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}},
+        MARQUES.map(function(m){
+          var active=form.marque===m;
+          return h("div",{key:m,onClick:function(){set("marque",m);},style:{padding:"8px 16px",borderRadius:100,fontSize:13,fontWeight:700,cursor:"pointer",background:active?V.grad:"rgba(255,255,255,.06)",color:active?"#fff":V.muted,border:"1px solid "+(active?V.accent:V.border),boxShadow:active?glowS(V.accent):"none",transition:"all .2s"}},m);
+        })
+      ),
+      h(Inp,{label:"Modele *",value:form.appareil,onChange:function(e){set("appareil",e.target.value);},placeholder:"iPhone 14, Galaxy S22..."}),
+      h(Inp,{label:"Panne *",value:form.panne,onChange:function(e){set("panne",e.target.value);},placeholder:"Ecran casse, batterie..."}),
+      h(Inp,{label:"Details (optionnel)",value:form.details,onChange:function(e){set("details",e.target.value);},placeholder:"Chute, eau...",multiline:true})
+    ),
+    h(Btn,{onClick:envoyer,grad:true,disabled:!ok||loading},
+      loading
+        ?h("span",{style:{display:"inline-flex",alignItems:"center",gap:8,justifyContent:"center"}},
+            h("span",{style:{width:16,height:16,border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin .7s linear infinite"}}),
+            "Envoi..."
+          )
+        :"📋  Envoyer la demande"
+    )
+  );
+}
+
+/* ===== TARIFS ===== */
+function Tarifs(){
+  var s1=useState("Apple"); var marque=s1[0]; var setMarque=s1[1];
+  var s2=useState(""); var search=s2[0]; var setSearch=s2[1];
+  var s3=useState([]); var allTarifs=s3[0]; var setAllTarifs=s3[1];
+  var s4=useState(true); var loadingT=s4[0]; var setLoadingT=s4[1];
+
+  useEffect(function(){
+    db.getTarifs().then(function(data){
+      if(data&&data.length){setAllTarifs(data);}
+      setLoadingT(false);
+    }).catch(function(){setLoadingT(false);});
+  },[]);
+
+  var marques=allTarifs.length>0?[...new Set(allTarifs.map(function(t){return t.marque;}))]:["Apple","Samsung","Xiaomi","Autres"];
+  var filtered=allTarifs.length>0
+    ?(search
+      ?allTarifs.filter(function(t){return t.nom.toLowerCase().indexOf(search.toLowerCase())>=0;})
+      :allTarifs.filter(function(t){return t.marque===marque;}))
+    :[];
+
+  return h("div",{style:{padding:"20px 16px 110px",animation:"fadeUp .4s ease"}},
+    h("div",{style:{fontSize:24,fontWeight:800,color:V.text,letterSpacing:"-.03em",marginBottom:4}},"Nos tarifs"),
+    h("div",{style:{fontSize:13,color:V.muted,marginBottom:16}},"Diagnostic gratuit - Prix transparents"),
+    h("div",{style:{background:"linear-gradient(135deg,rgba(52,211,153,.15),rgba(192,132,252,.08))",border:"1px solid "+V.greenBr,borderRadius:16,padding:"13px 16px",marginBottom:18,display:"flex",alignItems:"center",gap:12}},
+      h("div",{style:{width:36,height:36,borderRadius:10,background:V.greenBg,border:"1px solid "+V.greenBr,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}},"🔍"),
+      h("div",null,
+        h("div",{style:{fontSize:13,fontWeight:700,color:V.green}},"Diagnostic gratuit"),
+        h("div",{style:{fontSize:11,color:V.muted,marginTop:2}},"Apportez votre appareil, on regarde gratuitement")
+      )
+    ),
+    h("div",{style:{position:"relative",marginBottom:16}},
+      h("span",{style:{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:16,pointerEvents:"none"}},"🔍"),
+      h("input",{style:{width:"100%",background:V.card,border:"1px solid "+(search?V.accent:V.border),borderRadius:14,padding:"12px 16px 12px 44px",color:V.text,fontSize:14,boxSizing:"border-box",WebkitAppearance:"none",outline:"none"},placeholder:"Rechercher...",value:search,onChange:function(e){setSearch(e.target.value);}}),
+      search&&h("span",{onClick:function(){setSearch("");},style:{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",fontSize:18,cursor:"pointer",color:V.muted}},"×")
+    ),
+    !search&&h("div",{style:{display:"flex",gap:8,overflowX:"auto",marginBottom:16,paddingBottom:4}},
+      marques.map(function(m){
+        var active=marque===m;
+        return h("div",{key:m,onClick:function(){setMarque(m);},style:{flexShrink:0,padding:"8px 18px",borderRadius:100,fontSize:13,fontWeight:700,cursor:"pointer",background:active?V.grad:"rgba(255,255,255,.06)",color:active?"#fff":V.muted,border:"1px solid "+(active?V.accent:V.border),boxShadow:active?glowS(V.accent):"none",transition:"all .2s"}},m);
+      })
+    ),
+    loadingT
+      ?h("div",{style:{textAlign:"center",padding:40,color:V.muted}},"Chargement...")
+      :h(Card,{style:{padding:0,overflow:"hidden",marginBottom:16}},
+          filtered.length===0
+            ?h("div",{style:{padding:32,textAlign:"center",color:V.muted,fontSize:14}},"Aucun tarif")
+            :filtered.map(function(it,i){
+                var isFree=it.prix==="Gratuit"||it.prix==="0";
+                var isDevis=it.prix==="Sur devis";
+                var prix=isFree?"Gratuit":isDevis?"Sur devis":it.prix;
+                var col=isFree?V.green:isDevis?V.yellow:V.accent;
+                return h("div",{key:it.id||i,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 18px",borderBottom:i<filtered.length-1?"1px solid "+V.border:"none"}},
+                  h("div",{style:{flex:1}},
+                    h("div",{style:{fontSize:14,fontWeight:600,color:V.text,letterSpacing:"-.01em"}},it.nom),
+                    h("div",{style:{fontSize:11,color:V.dim,marginTop:3}},"⏱ "+it.duree)
+                  ),
+                  h("div",{style:{fontSize:15,fontWeight:800,color:col,flexShrink:0,marginLeft:12}},prix)
+                );
+              })
+        ),
+    h("a",{href:"tel:0759101321",style:{display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"15px",borderRadius:16,background:V.grad,color:"#fff",fontWeight:700,fontSize:15,textDecoration:"none",boxShadow:glow(V.accent)}},"📞  Appeler pour un devis")
+  );
+}
+
+/* ===== APP ===== */
+var TABS=[
+  {id:"accueil",e:"🏠",l:"Accueil"},
+  {id:"suivi",  e:"🔍",l:"Suivi"},
+  {id:"rdv",    e:"📅",l:"RDV"},
+  {id:"devis",  e:"📋",l:"Devis"},
+  {id:"tarifs", e:"💰",l:"Tarifs"},
+];
+
+function App(){
+  var s1=useState("accueil"); var tab=s1[0]; var setTab=s1[1];
+  var s2=useState(null); var toast=s2[0]; var setToast=s2[1];
+  function notif(msg){setToast({msg:msg});}
+
+  return h(Fragment,null,
+    toast&&h(Toast,{msg:toast.msg,onClose:function(){setToast(null);}}),
+    h("div",{style:{background:V.bg,minHeight:"100vh",maxWidth:430,margin:"0 auto",color:V.text}},
+      h("div",{style:{position:"sticky",top:0,zIndex:100,background:"rgba(14,11,22,.9)",backdropFilter:"blur(24px)",WebkitBackdropFilter:"blur(24px)",borderBottom:"1px solid rgba(255,255,255,.06)",padding:"13px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}},
+        h("div",{style:{display:"flex",alignItems:"center",gap:12}},
+          h("div",{style:{width:40,height:40,borderRadius:12,background:V.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:glow(V.accent)}},"📱"),
+          h("div",null,
+            h("div",{style:{fontSize:16,fontWeight:800,color:V.text,letterSpacing:"-.02em"}},"Phone Info Service"),
+            h("div",{style:{fontSize:10,fontWeight:600,color:V.muted,letterSpacing:".05em"}},"ESPACE CLIENT")
+          )
+        ),
+        h("a",{href:"tel:0759101321",style:{display:"flex",alignItems:"center",gap:6,background:"rgba(192,132,252,.12)",border:"1px solid rgba(192,132,252,.25)",borderRadius:100,padding:"7px 14px",textDecoration:"none"}},
+          h("span",{style:{fontSize:14}},"📞"),
+          h("span",{style:{fontSize:12,fontWeight:700,color:V.accent}},"Appeler")
+        )
+      ),
+      tab==="accueil"&&h(Accueil,{onNav:setTab}),
+      tab==="suivi"&&h(Suivi,null),
+      tab==="rdv"&&h(Rdv,{onNotif:notif}),
+      tab==="devis"&&h(Devis,{onNotif:notif}),
+      tab==="tarifs"&&h(Tarifs,null),
+      h("div",{style:{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,background:"rgba(14,11,22,.92)",backdropFilter:"blur(24px)",WebkitBackdropFilter:"blur(24px)",borderTop:"1px solid rgba(255,255,255,.07)",display:"flex",zIndex:100}},
+        TABS.map(function(t){
+          var active=tab===t.id;
+          return h("div",{key:t.id,onClick:function(){setTab(t.id);},style:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",padding:"10px 2px 14px",gap:4,cursor:"pointer",color:active?V.accent:V.dim,fontSize:9,fontWeight:active?700:400,letterSpacing:".03em",position:"relative",transition:"color .2s"}},
+            active&&h("div",{style:{position:"absolute",top:0,left:"18%",right:"18%",height:2,background:V.grad,borderRadius:"0 0 3px 3px",boxShadow:glow(V.accent)}}),
+            h("div",{style:{fontSize:22,filter:active?"drop-shadow(0 0 8px rgba(192,132,252,.7))":"none",transition:"filter .2s"}},t.e),
+            t.l
+          );
+        })
+      )
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+</script>
+</body>
+</html>

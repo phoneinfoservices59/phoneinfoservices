@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Phone Info Service — Admin</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#0e0b16}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overscroll-behavior:none;color:#f0e8ff;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+::-webkit-scrollbar{display:none}
+input,select,textarea{font-family:inherit;color:#f0e8ff;background:#1f1535;font-size:16px!important}
+input::placeholder{color:#8b7aaa}
+option{background:#17112a;color:#f0e8ff}
+div{-webkit-overflow-scrolling:touch}
+button:active{opacity:.75!important;transform:scale(.97)!important}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const {useState,useEffect,useRef,createElement:h} = React;
+
+/* ─── SUPABASE ─── */
+const SUPA_URL='https://byezhlpfykjxwvosewqf.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5ZXpobHBmeWtqeHd2b3Nld3FmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODk1NzI5MiwiZXhwIjoyMDk0NTMzMjkyfQ.VRmq9QSPAUJCJxi2qAAXlEMAFFLluOORxiuXQyqIHGU';
+const HDRS={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+const supa=async(path,opts={})=>{
+  const res=await fetch(SUPA_URL+'/rest/v1/'+path,{headers:{...HDRS,...(opts.headers||{})},...opts});
+  if(!res.ok){console.error('Supabase:',await res.text());return null;}
+  const t=await res.text();return t?JSON.parse(t):null;
+};
+const db={
+  getReps:()=>supa('reparations?select=*&order=created_at.desc'),
+  addRep:(d)=>supa('reparations',{method:'POST',body:JSON.stringify(d)}),
+  updateRepStatut:(id,statut,pct)=>supa('reparations?id=eq.'+id,{method:'PATCH',body:JSON.stringify({statut,progression:pct,updated_at:new Date()})}),
+  marquerNotifie:(id)=>supa('reparations?id=eq.'+id,{method:'PATCH',body:JSON.stringify({notifie:true})}),
+  getOrCreateClient:async(nom,telephone,email)=>{
+    const tel=telephone.replace(/\s/g,'');
+    const ex=await supa('clients?telephone=eq.'+tel+'&select=id');
+    if(ex&&ex[0])return ex[0].id;
+    const cr=await supa('clients',{method:'POST',body:JSON.stringify({nom,telephone:tel,email:email||''})});
+    return cr&&cr[0]?cr[0].id:null;
+  },
+  getDevis:()=>supa('devis?select=*,clients(*)&order=created_at.desc'),
+  updateDevisStatut:(id,statut)=>supa('devis?id=eq.'+id,{method:'PATCH',body:JSON.stringify({statut})}),
+  getRdv:()=>supa('rendez_vous?select=*,clients(*)&order=date_rdv.asc'),
+  updateRdvStatut:(id,statut)=>supa('rendez_vous?id=eq.'+id,{method:'PATCH',body:JSON.stringify({statut})}),
+  marquerRappel:(id)=>supa('rendez_vous?id=eq.'+id,{method:'PATCH',body:JSON.stringify({rappel_envoye:true})}),
+  getTarifs:()=>supa('tarifs?order=marque.asc,ordre.asc'),
+  addTarif:(d)=>supa('tarifs',{method:'POST',body:JSON.stringify(d)}),
+  updateTarif:(id,d)=>supa('tarifs?id=eq.'+id,{method:'PATCH',body:JSON.stringify(d)}),
+  deleteTarif:(id)=>supa('tarifs?id=eq.'+id,{method:'DELETE'}),
+  getAvis:()=>supa('avis?order=created_at.desc'),
+  validerAvis:(id,v)=>supa('avis?id=eq.'+id,{method:'PATCH',body:JSON.stringify({valide:v})}),
+};
+
+/* ─── PALETTE VIOLET & ROSE ─── */
+const V = {
+  bg:       '#0e0b16',
+  surface:  '#17112a',
+  card:     '#1f1535',
+  card2:    '#261840',
+  border:   '#3a2260',
+  border2:  '#5a3490',
+  text:     '#f0e8ff',
+  muted:    '#9b85c0',
+  dim:      '#5a4480',
+
+  accent:   '#c084fc',  /* violet */
+  accent2:  '#f472b6',  /* rose   */
+  accentBg: '#2a0f45',
+  accentBr: '#6b2fa0',
+
+  pink:     '#f472b6',
+  pinkBg:   '#2b0a28',
+  pinkBr:   '#7a1f60',
+
+  green:    '#34d399',
+  greenBg:  '#042e1a',
+  greenBr:  '#0d5c38',
+
+  orange:   '#fb923c',
+  orangeBg: '#2b1200',
+  orangeBr: '#6b3010',
+
+  yellow:   '#fbbf24',
+  yellowBg: '#2b1a00',
+  yellowBr: '#6b4200',
+
+  red:      '#f43f5e',
+  redBg:    '#2b0014',
+  redBr:    '#6b002e',
+};
+
+const glow = c => `0 0 18px ${c}55,0 0 36px ${c}22`;
+const mkRef = p => p+'-'+Math.floor(Math.random()*900+100);
+
+/* ─── STATUTS ─── */
+const STATUTS = {
+  recu:       {label:'Reçu',            icon:'📥', color:V.muted,  bg:V.card,     br:V.border,   pct:10 },
+  diagnostic: {label:'Diagnostic',      icon:'🔍', color:V.yellow, bg:V.yellowBg, br:V.yellowBr, pct:25 },
+  commande:   {label:'Pièce commandée', icon:'📦', color:V.orange, bg:V.orangeBg, br:V.orangeBr, pct:40 },
+  inprogress: {label:'En cours',        icon:'🔧', color:V.accent, bg:V.accentBg, br:V.accentBr, pct:65 },
+  ready:      {label:'Prêt ✓',          icon:'✅', color:V.green,  bg:V.greenBg,  br:V.greenBr,  pct:100},
+  delivered:  {label:'Livré',           icon:'🎉', color:V.dim,    bg:V.card,     br:V.border,   pct:100},
+};
+
+const MARQUES = ['Apple','Samsung','Huawei','Xiaomi','Oppo','Google','Wiko','OnePlus'];
+
+const BREVO_KEY='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';
+const BREVO_SENDER='PhoneInfo';
+
+/* ─── BREVO SMS ─── */
+const sendSMS = async (telephone, message) => {
+  const tel = telephone.replace(/\s/g,'').replace(/^0/,'+33');
+  try {
+    const res = await fetch('https://api.brevo.com/v3/transactionalSMS/sms', {
+      method:'POST',
+      headers:{'api-key':BREVO_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        sender: BREVO_SENDER,
+        recipient: tel,
+        content: message,
+        type: 'transactional'
+      })
+    });
+    const data = await res.json();
+    if(res.ok){ console.log('SMS envoyé:', data); return true; }
+    else{ console.error('Brevo error:', data); return false; }
+  } catch(e){
+    console.error('SMS error:', e);
+    return false;
+  }
+};
+
+/* SMS Templates */
+const smsPret  = (r,c) => `Bonjour ${(c?.nom||'').split(' ')[0]} ! Votre ${r.appareil} est pret a recuperer.\n📍 Phone Info Service\n20 Place Caulier, Lille\n⏰ Lun-Sam 9h-19h\nRef: ${r.reference}`;
+const smsRdv   = (r,c) => `Bonjour ${(c?.nom||'').split(' ')[0]} ! Rappel RDV Phone Info Service:\n📅 ${r.date_rdv} a ${r.heure_rdv}\n📱 ${r.appareil}\n📍 20 Place Caulier, Lille`;
+const smsDevis = (d,c,prix,duree) => `Bonjour ${(c?.nom||'').split(' ')[0]} ! Devis ${d.appareil}:\n💰 ${prix} - Duree: ${duree}\nContactez-nous: 07 59 10 13 21\nPhone Info Service`;
+
+/* ─── DEMO DATA (fallback si hors ligne) ─── */
+const initReps=[];
+const initDevis=[];
+const initRdv=[];
+const initTarifs={};
+
+/* ─── STYLE HELPERS ─── */
+const inpStyle = {width:'100%',background:V.card,border:`1px solid ${V.border}`,borderRadius:12,padding:'11px 14px',color:V.text,fontSize:13,outline:'none',boxSizing:'border-box',marginBottom:10};
+const lblStyle = {fontSize:10,fontWeight:700,color:V.muted,textTransform:'uppercase',letterSpacing:1,display:'block',marginBottom:4};
+const btnBase  = (bg,col,br) => ({padding:'12px',borderRadius:12,background:bg,border:br||'none',cursor:'pointer',fontSize:13,fontWeight:700,color:col,fontFamily:'inherit',flex:1});
+
+/* ─── TOAST ─── */
+function Toast({msg,onClose}){
+  useEffect(()=>{const t=setTimeout(onClose,3500);return()=>clearTimeout(t)},[]);
+  return h('div',{style:{position:'fixed',top:76,left:'50%',transform:'translateX(-50%)',zIndex:999,
+    background:`linear-gradient(135deg,${V.accent},${V.pink})`,borderRadius:16,padding:'13px 20px',
+    color:'#fff',fontWeight:700,fontSize:13,boxShadow:glow(V.accent),
+    display:'flex',alignItems:'center',gap:10,maxWidth:380,width:'90%',animation:'slideUp .25s ease'}},
+    h('span',{style:{fontSize:18}},'🔔'), msg,
+    h('button',{onClick:onClose,style:{marginLeft:'auto',background:'none',border:'none',color:'#fff',cursor:'pointer',fontSize:20,opacity:.7}},'×')
+  );
+}
+
+/* ─── STAT CARD ─── */
+function StatCard({icon,value,label,color,pulse}){
+  return h('div',{style:{background:V.card,border:`1px solid ${color}44`,borderRadius:16,padding:'14px 16px',flex:1,position:'relative',overflow:'hidden'}},
+    pulse&&h('div',{style:{position:'absolute',top:10,right:10,width:8,height:8,borderRadius:'50%',background:color,boxShadow:glow(color),animation:'pulse 1.5s infinite'}}),
+    h('div',{style:{fontSize:22,marginBottom:4}},icon),
+    h('div',{style:{fontSize:24,fontWeight:800,color,lineHeight:1}},value),
+    h('div',{style:{fontSize:11,color:V.muted,marginTop:2,fontWeight:600}},label)
+  );
+}
+
+/* ─── BOTTOM SHEET ─── */
+function Sheet({children,onClose}){
+  return h('div',{style:{position:'fixed',inset:0,background:'rgba(0,0,0,.75)',zIndex:200,display:'flex',alignItems:'flex-end',justifyContent:'center',backdropFilter:'blur(6px)'},onClick:onClose},
+    h('div',{onClick:e=>e.stopPropagation(),style:{background:V.surface,borderRadius:'24px 24px 0 0',padding:24,width:'100%',maxWidth:430,maxHeight:'90vh',overflowY:'auto',border:`1px solid ${V.border}`,borderBottom:'none',animation:'slideUp .25s ease'}},
+      h('div',{style:{width:40,height:4,borderRadius:2,background:V.border,margin:'0 auto 20px'}}),
+      children
+    )
+  );
+}
+
+/* ─── SMS PREVIEW MODAL ─── */
+function SmsModal({titre,message,telephone,onClose,onSend}){
+  const [sending,setSending]=useState(false);
+  const [sent,setSent]=useState(false);
+  const envoyer=async()=>{
+    setSending(true);
+    const ok=await sendSMS(telephone,message);
+    setSending(false);
+    if(ok){setSent(true);setTimeout(()=>{onSend&&onSend();onClose();},1500);}
+    else{alert('Erreur SMS. Verifiez le numero.');}
+  };
+  return h(Sheet,{onClose},
+    h('div',{style:{fontWeight:800,fontSize:15,color:V.text,marginBottom:6}},titre),
+    h('div',{style:{fontSize:12,color:V.muted,marginBottom:12}},`→ ${telephone}`),
+    h('div',{style:{background:V.accentBg,border:`1px solid ${V.accentBr}`,borderRadius:12,padding:14,fontSize:13,color:V.accent,lineHeight:1.8,whiteSpace:'pre-wrap',marginBottom:14}},message),
+    sent
+      ?h('div',{style:{textAlign:'center',padding:16,fontSize:14,fontWeight:700,color:V.green}},'✅ SMS envoye automatiquement !')
+      :h('div',{style:{display:'flex',gap:10}},
+          h('button',{onClick:onClose,style:btnBase(V.card,V.muted,`1px solid ${V.border}`)},'Annuler'),
+          h('button',{onClick:envoyer,disabled:sending,style:{...btnBase(`linear-gradient(135deg,${V.green},#0d9e60)`,V.white),flex:2}},
+            sending?'Envoi en cours...':'🚀 Envoyer via Brevo'
+          )
+        )
+  );
+}
+
+/* ─── FICHE CLIENT ─── */
+function FicheClient({client,reps,onClose}){
+  return h(Sheet,{onClose},
+    h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:20}},
+      h('div',{style:{fontWeight:800,fontSize:18,color:V.text}},'👤 Fiche Client'),
+      h('button',{onClick:onClose,style:{background:V.card,border:`1px solid ${V.border}`,borderRadius:8,width:30,height:30,cursor:'pointer',color:V.muted,fontSize:16}},'×')
+    ),
+    h('div',{style:{background:V.card,borderRadius:14,padding:16,marginBottom:16}},
+      h('div',{style:{fontSize:16,fontWeight:800,color:V.text,marginBottom:8}},client.nom),
+      h('div',{style:{fontSize:13,color:V.muted}},`📞 ${client.telephone}`),
+      client.email&&h('div',{style:{fontSize:13,color:V.muted,marginTop:4}},`✉️ ${client.email}`)
+    ),
+    h('a',{href:`sms:${client.telephone.replace(/\s/g,'')}`,style:{display:'flex',alignItems:'center',justifyContent:'center',gap:8,width:'100%',padding:13,borderRadius:12,background:`linear-gradient(135deg,${V.accent},${V.pink})`,color:'#fff',fontWeight:700,fontSize:13,textDecoration:'none',marginBottom:16}},'📱 Envoyer un SMS'),
+    h('div',{style:{fontSize:12,fontWeight:700,color:V.muted,textTransform:'uppercase',letterSpacing:1,marginBottom:10}},`Historique (${reps.length})`),
+    reps.map(r=>{
+      const st=STATUTS[r.statut]||STATUTS.recu;
+      return h('div',{key:r.id,style:{background:V.card,border:`1px solid ${st.br}`,borderRadius:12,padding:12,marginBottom:8}},
+        h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:4}},
+          h('span',{style:{fontSize:13,fontWeight:700,color:V.text}},r.appareil),
+          h('span',{style:{fontSize:11,color:st.color}},`${st.icon} ${st.label}`)
+        ),
+        h('div',{style:{fontSize:11,color:V.muted}},`🔧 ${r.panne}${r.prix?' · 💰 '+r.prix:''} · #${r.reference}`)
+      );
+    })
+  );
+}
+
+/* ─── MODAL AJOUT RÉPARATION ─── */
+function ModalAjout({onClose,onAdd,onNotif}){
+  const [form,setForm]=useState({client:'',telephone:'',email:'',appareil:'',marque:'Apple',panne:'',prix:'',statut:'recu'});
+  const [loading,setLoading]=useState(false);
+  const set=(k,v)=>setForm(f=>({...f,[k]:v}));
+
+  const ajouter=async()=>{
+    if(!form.client||!form.appareil)return;
+    setLoading(true);
+    try{
+      const ref=mkRef('PIS');
+      const tel=(form.telephone||'').replace(/\s/g,'');
+      const saved=await supa('reparations',{method:'POST',body:JSON.stringify({
+        reference:ref,
+        nom_client:form.client,
+        tel_client:tel,
+        appareil:form.appareil,
+        marque:form.marque||'',
+        panne:form.panne||'',
+        prix:form.prix||'',
+        statut:form.statut||'recu',
+        progression:STATUTS[form.statut]?.pct||10,
+        notifie:false
+      })});
+      const rep={
+        id:saved&&saved[0]?saved[0].id:Date.now(),
+        reference:ref,
+        appareil:form.appareil,
+        marque:form.marque,
+        panne:form.panne,
+        prix:form.prix,
+        statut:form.statut||'recu',
+        progression:STATUTS[form.statut]?.pct||10,
+        notifie:false,
+        clients:{nom:form.client,telephone:form.telephone,email:form.email}
+      };
+      onAdd(rep);
+      if(tel) sendSMS(tel,'Bonjour '+form.client.split(' ')[0]+' ! Recu votre '+form.appareil+'. Ref: '+ref+' - Phone Info Service');
+      onNotif('Reparation ajoutee — #'+ref);
+      setLoading(false);
+      onClose();
+    }catch(e){
+      onNotif('Erreur: '+e.message);
+      setLoading(false);
+    }
+  };
+
+  return h(Sheet,{onClose},
+    h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:16}},
+      h('div',{style:{fontWeight:800,fontSize:16,color:V.text}},'➕ Nouvelle réparation'),
+      h('button',{onClick:onClose,style:{background:V.card,border:`1px solid ${V.border}`,borderRadius:8,width:30,height:30,cursor:'pointer',color:V.muted,fontSize:16}},'×')
+    ),
+    [['client','Nom du client *','Mohamed Benali'],['telephone','Téléphone','06 12 34 56 78'],['email','Email (optionnel)','client@email.com'],['appareil','Appareil *','iPhone 14...'],['panne','Panne','Écran cassé...']].map(([k,l,p])=>
+      h('div',{key:k},h('label',{style:lblStyle},l),h('input',{style:inpStyle,placeholder:p,value:form[k],onChange:e=>set(k,e.target.value)}))
+    ),
+    h('label',{style:lblStyle},'Marque'),
+    h('select',{style:inpStyle,value:form.marque,onChange:e=>set('marque',e.target.value)},MARQUES.map(m=>h('option',{key:m,value:m},m))),
+    h('label',{style:lblStyle},'Prix estimé'),
+    h('input',{style:inpStyle,placeholder:'89€',value:form.prix,onChange:e=>set('prix',e.target.value)}),
+    h('label',{style:lblStyle},'Statut initial'),
+    h('select',{style:{...inpStyle,marginBottom:14},value:form.statut,onChange:e=>set('statut',e.target.value)},
+      Object.entries(STATUTS).map(([k,v])=>h('option',{key:k,value:k},`${v.icon} ${v.label}`))
+    ),
+    h('div',{style:{background:V.greenBg,border:`1px solid ${V.greenBr}`,borderRadius:10,padding:'10px 14px',fontSize:12,color:V.green,marginBottom:16}},'📱 Un SMS de confirmation sera ouvert si un numéro est renseigné.'),
+    h('div',{style:{display:'flex',gap:10}},
+      h('button',{onClick:onClose,style:btnBase(V.card,V.muted,`1px solid ${V.border}`)},'Annuler'),
+      h('button',{onClick:ajouter,disabled:loading,style:{...btnBase(`linear-gradient(135deg,${V.accent},${V.pink})`,'#fff'),flex:2,opacity:form.client&&form.appareil?1:.45}},loading?'Création...':'✓ Ajouter')
+    )
+  );
+}
+
+/* ─── TAB RÉPARATIONS ─── */
+function RepairsTab({onNotif}){
+  const [items,setItems]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [filtre,setFiltre]=useState('all');
+  const [smsM,setSmsM]=useState(null);
+  const [showAjout,setShowAjout]=useState(false);
+  const [fiche,setFiche]=useState(null);
+
+  const loadReps=async()=>{
+    setLoading(true);
+    const data=await db.getReps();
+    if(data)setItems(data);
+    setLoading(false);
+  };
+  useEffect(()=>{loadReps();},[]);
+
+  const changeStatut=async(id,statut)=>{
+    const pct=STATUTS[statut]?.pct||0;
+    await db.updateRepStatut(id,statut,pct);
+    setItems(r=>r.map(x=>x.id===id?{...x,statut,progression:pct}:x));
+    if(statut==='ready'){
+      const rep=items.find(x=>x.id===id);
+      const repTel=rep.tel_client||rep.clients?.telephone;
+if(rep&&repTel&&!rep.notifie){
+        const msg=smsPret(rep,{nom:rep.nom_client||rep.clients?.nom||""});
+        const ok=await sendSMS(repTel,msg);
+        if(ok){
+          await db.marquerNotifie(id);
+          setItems(r=>r.map(x=>x.id===id?{...x,notifie:true}:x));
+          onNotif('✅ SMS automatique envoye au client !');
+        }
+      }
+    }
+  };
+
+  const ouvrirSms=(r)=>{
+    const msg=smsPret(r,r.clients);
+    setSmsM({titre:'📱 Notifier — Réparation prête',message:msg,telephone:r.tel_client||r.clients?.telephone,rid:r.id});
+  };
+
+  const confirmerSms=async()=>{
+    const ok=await sendSMS(smsM.telephone,smsM.message);
+    if(ok){await db.marquerNotifie(smsM.rid);setItems(i=>i.map(x=>x.id===smsM.rid?{...x,notifie:true}:x));onNotif('✅ SMS envoye via Brevo !');}
+    else{onNotif('❌ Erreur SMS');}
+    setSmsM(null);
+  };
+
+  const genPDF=(r)=>{
+    const date=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+    const st=STATUTS[r.statut]||STATUTS.recu;
+    const w=window.open('','_blank');
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Reçu ${r.reference}</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;color:#1a0a2e}
+.hd{background:linear-gradient(135deg,#c084fc,#f472b6);color:#fff;padding:24px 28px}
+.hd h1{font-size:24px;font-weight:900;letter-spacing:2px;margin-bottom:4px}
+.hd p{font-size:11px;opacity:.85;margin:2px 0}
+.yl{height:3px;background:#fbbf24}
+.ti{text-align:center;font-size:15px;font-weight:700;color:#c084fc;padding:16px 0 8px}
+.sp{border:none;border-top:2px solid #c084fc;margin:0 24px 14px}
+.mt{display:flex;justify-content:space-between;padding:0 24px 14px;font-size:11px;color:#666}
+.s{margin:0 24px 14px;border-radius:6px;overflow:hidden}
+.sb{display:flex}.b{width:5px;flex-shrink:0}
+.bp{background:#c084fc}.by{background:#f472b6}
+.sc{background:#f5eeff;padding:12px 16px;flex:1}
+.st{font-size:11px;font-weight:700;color:#c084fc;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.fi{font-size:12px;margin:3px 0;color:#333}
+.pr{display:inline-block;background:#c084fc;color:#fff;padding:5px 14px;border-radius:4px;font-size:14px;font-weight:700;margin-top:8px}
+.ft{background:#c084fc;color:#fff;text-align:center;padding:10px;margin-top:20px;font-size:10px}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head>
+<body>
+<div class="hd"><h1>PHONE INFO SERVICE</h1><p>Vente, Réparation & Services</p><p>20 Place Caulier — 59800 Lille</p><p>07 59 10 13 21 | phoneservice59800@gmail.com</p></div>
+<div class="yl"></div><div class="ti">REÇU DE RÉPARATION</div><hr class="sp"/>
+<div class="mt"><span>Réf : ${r.reference}</span><span>Date : ${date}</span></div>
+<div class="s"><div class="sb"><div class="b bp"></div><div class="sc"><div class="st">Client</div>
+<div class="fi"><b>Nom :</b> ${r.nom_client||r.clients?.nom||'N/A'}</div>
+<div class="fi"><b>Tél :</b> ${r.tel_client||r.clients?.telephone||'N/A'}</div></div></div></div>
+<div class="s"><div class="sb"><div class="b by"></div><div class="sc"><div class="st">Réparation</div>
+<div class="fi"><b>Appareil :</b> ${r.appareil}</div>
+<div class="fi"><b>Panne :</b> ${r.panne||'N/A'}</div>
+<div class="fi"><b>Statut :</b> ${st.icon} ${st.label}</div>
+${r.prix?`<div class="pr">Prix : ${r.prix}</div>`:''}</div></div></div>
+<div class="yl"></div>
+<div class="ft"><b>PHONE INFO SERVICE</b> — 20 Place Caulier, 59800 Lille | 07 59 10 13 21</div>
+<script>window.onload=()=>window.print();<\/script></body></html>`);
+    w.document.close();
+    onNotif('📄 Reçu PDF généré !');
+  };
+
+  const filtered=filtre==='all'?items:items.filter(x=>x.statut===filtre);
+  const stats={total:items.length,ip:items.filter(x=>x.statut==='inprogress').length,ready:items.filter(x=>x.statut==='ready').length};
+  const fReps=fiche?items.filter(r=>r.clients?.id===fiche.id):[];
+
+  return h('div',{style:{padding:'16px 16px 100px'}},
+    smsM&&h(SmsModal,{...smsM,onClose:()=>setSmsM(null),onSend:confirmerSms}),
+    showAjout&&h(ModalAjout,{onClose:()=>setShowAjout(false),onAdd:r=>setItems(i=>[r,...i]),onNotif}),
+    fiche&&h(FicheClient,{client:fiche,reps:fReps,onClose:()=>setFiche(null)}),
+
+    /* header */
+    h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}},
+      h('div',null,
+        h('div',{style:{fontSize:22,fontWeight:800,color:V.text}},'Réparations'),
+        h('div',{style:{fontSize:12,color:V.muted}},`${items.length} appareils`)
+      ),
+      h('button',{onClick:()=>setShowAjout(true),style:{background:`linear-gradient(135deg,${V.accent},${V.pink})`,border:'none',borderRadius:12,padding:'10px 16px',color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',boxShadow:glow(V.accent)}},'➕ Ajouter')
+    ),
+
+    /* stats */
+    h('div',{style:{display:'flex',gap:8,marginBottom:16}},
+      h(StatCard,{icon:'🔧',value:stats.total,label:'Total',color:V.accent}),
+      h(StatCard,{icon:'⚡',value:stats.ip,label:'En cours',color:V.yellow,pulse:stats.ip>0}),
+      h(StatCard,{icon:'✅',value:stats.ready,label:'Prêts',color:V.green,pulse:stats.ready>0})
+    ),
+
+    /* filtres */
+    h('div',{style:{display:'flex',gap:6,overflowX:'auto',marginBottom:16,paddingBottom:4}},
+      [['all','Tous'],['ready','Prêts'],['inprogress','En cours'],['commande','Attente'],['recu','Reçus'],['delivered','Livrés']].map(([v,l])=>
+        h('div',{key:v,onClick:()=>setFiltre(v),style:{flexShrink:0,padding:'7px 14px',borderRadius:20,fontSize:12,fontWeight:700,cursor:'pointer',
+          background:filtre===v?V.accent:V.card,color:filtre===v?'#fff':V.muted,border:`1px solid ${filtre===v?V.accent:V.border}`}},l)
+      )
+    ),
+
+    /* cartes */
+    filtered.map(r=>{
+      const st=STATUTS[r.statut]||STATUTS.recu;
+      return h('div',{key:r.id,style:{background:V.card,border:`1px solid ${st.br}`,borderRadius:18,padding:16,marginBottom:10,
+        boxShadow:r.statut==='ready'?glow(V.green):r.statut==='inprogress'?glow(V.accent):'none',transition:'all .3s'}},
+
+        h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:10}},
+          h('div',null,
+            h('div',{onClick:()=>setFiche(r.clients),style:{fontSize:15,fontWeight:800,color:V.accent,cursor:'pointer',textDecoration:'underline',textDecorationStyle:'dotted'}},`👤 ${r.nom_client||r.nom_client||r.clients?.nom||'Client'}`),
+            h('div',{style:{fontSize:11,color:V.muted,marginTop:2}},`${r.tel_client||r.clients?.telephone} · #${r.reference}`)
+          ),
+          h('span',{style:{display:'inline-flex',alignItems:'center',gap:5,padding:'5px 12px',borderRadius:20,fontSize:11,fontWeight:700,color:st.color,background:st.bg,border:`1px solid ${st.br}`}},`${st.icon} ${st.label}`)
+        ),
+
+        h('div',{style:{display:'flex',gap:6,marginBottom:12,flexWrap:'wrap'}},
+          h('span',{style:{background:V.accentBg,border:`1px solid ${V.accentBr}`,color:V.accent,borderRadius:8,padding:'3px 10px',fontSize:11,fontWeight:600}},`📱 ${r.appareil}`),
+          r.panne&&h('span',{style:{background:V.orangeBg,border:`1px solid ${V.orangeBr}`,color:V.orange,borderRadius:8,padding:'3px 10px',fontSize:11,fontWeight:600}},`🔧 ${r.panne}`),
+          r.prix&&h('span',{style:{background:V.greenBg,border:`1px solid ${V.greenBr}`,color:V.green,borderRadius:8,padding:'3px 10px',fontSize:11,fontWeight:600}},`💰 ${r.prix}`)
+        ),
+
+        /* progress */
+        h('div',{style:{height:5,background:V.border,borderRadius:3,overflow:'hidden',marginBottom:12}},
+          h('div',{style:{height:'100%',width:`${st.pct}%`,background:`linear-gradient(90deg,${V.accent}88,${V.pink})`,borderRadius:3,transition:'width .6s ease'}})
+        ),
+
+        /* statut buttons */
+        h('div',{style:{display:'flex',gap:5,flexWrap:'wrap',marginBottom:10}},
+          Object.entries(STATUTS).map(([k,v])=>
+            h('div',{key:k,onClick:()=>changeStatut(r.id,k),style:{padding:'5px 10px',borderRadius:8,fontSize:11,fontWeight:600,cursor:'pointer',
+              background:r.statut===k?v.bg:V.surface,color:r.statut===k?v.color:V.muted,border:`1px solid ${r.statut===k?v.br:V.border}`}},`${v.icon} ${v.label}`)
+          )
+        ),
+
+        /* actions */
+        h('div',{style:{display:'flex',gap:8,flexWrap:'wrap'}},
+          h('button',{onClick:()=>genPDF(r),style:{flex:1,padding:'9px',borderRadius:10,background:V.accentBg,border:`1px solid ${V.accentBr}`,cursor:'pointer',fontSize:11,fontWeight:700,color:V.accent,fontFamily:'inherit'}},'📄 Reçu PDF'),
+          r.statut==='ready'&&!r.notifie&&h('button',{onClick:()=>ouvrirSms(r),style:{flex:2,padding:'9px',borderRadius:10,background:`linear-gradient(135deg,${V.green},#0d9e60)`,border:'none',cursor:'pointer',fontSize:11,fontWeight:700,color:'#fff',fontFamily:'inherit'}},'📱 SMS Client'),
+          r.notifie&&h('div',{style:{fontSize:11,color:V.green,fontWeight:600,padding:'9px 0'}},'✓ Client notifié')
+        )
+      );
+    }),
+    filtered.length===0&&h('div',{style:{textAlign:'center',color:V.muted,marginTop:60,fontSize:13}},'Aucune réparation')
+  );
+}
+
+/* ─── TAB DEVIS ─── */
+function DevisTab({onNotif}){
+  const [items,setItems]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [smsM,setSmsM]=useState(null);
+  const [repM,setRepM]=useState(null);
+  const [prix,setPrix]=useState('');
+  const [duree,setDuree]=useState('1h');
+
+  useEffect(()=>{
+    db.getDevis().then(d=>{if(d)setItems(d);setLoading(false);});
+  },[]);
+
+  const marquerLu=async(id)=>{await db.updateDevisStatut(id,'lu');setItems(d=>d.map(x=>x.id===id?{...x,statut:'lu'}:x));};
+
+  const ouvrirReponse=(dv)=>{setRepM(dv);setPrix('');};
+
+  const prepSms=()=>{
+    if(!prix)return;
+    const msg=smsDevis(repM,repM.clients,prix,duree);
+    setSmsM({titre:'📱 Réponse devis SMS',message:msg,telephone:repM.clients.telephone,dvId:repM.id});
+    setRepM(null);
+  };
+
+  const confirmerSmsDv=async()=>{
+    const ok=await sendSMS(smsM.telephone,smsM.message);
+    if(ok){await db.updateDevisStatut(smsM.dvId,'repondu');setItems(d=>d.map(x=>x.id===smsM.dvId?{...x,statut:'repondu'}:x));onNotif('✅ SMS devis envoye via Brevo !');}
+    else{onNotif('❌ Erreur SMS');}
+    setSmsM(null);
+  };
+
+  const nonLus=items.filter(d=>d.statut==='nouveau').length;
+  const stDv={nouveau:{label:'Nouveau',color:V.orange,bg:V.orangeBg,br:V.orangeBr,icon:'🔔'},lu:{label:'Lu',color:V.accent,bg:V.accentBg,br:V.accentBr,icon:'👁'},repondu:{label:'Répondu',color:V.green,bg:V.greenBg,br:V.greenBr,icon:'✅'}};
+
+  return h('div',{style:{padding:'16px 16px 100px'}},
+    smsM&&h(SmsModal,{...smsM,onClose:()=>setSmsM(null),onSend:confirmerSmsDv}),
+    repM&&h(Sheet,{onClose:()=>setRepM(null)},
+      h('div',{style:{fontWeight:800,fontSize:16,color:V.text,marginBottom:4}},'💰 Répondre au devis'),
+      h('div',{style:{fontSize:12,color:V.muted,marginBottom:16}},`${repM.clients?.nom} · ${repM.appareil} · ${repM.panne}`),
+      h('label',{style:lblStyle},'Prix estimé'),
+      h('input',{style:inpStyle,placeholder:'89€',value:prix,onChange:e=>setPrix(e.target.value),autoFocus:true}),
+      h('label',{style:lblStyle},'Durée estimée'),
+      h('select',{style:{...inpStyle,marginBottom:16},value:duree,onChange:e=>setDuree(e.target.value)},
+        ['30min','45min','1h','1h30','2h','2h30','3h'].map(d=>h('option',{key:d,value:d},d))
+      ),
+      h('div',{style:{display:'flex',gap:10}},
+        h('button',{onClick:()=>setRepM(null),style:btnBase(V.card,V.muted,`1px solid ${V.border}`)},'Annuler'),
+        h('button',{onClick:prepSms,style:{...btnBase(`linear-gradient(135deg,${V.accent},${V.pink})`,'#fff'),flex:2,opacity:prix?1:.45}},'📱 Préparer SMS')
+      )
+    ),
+
+    h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}},
+      h('div',null,h('div',{style:{fontSize:22,fontWeight:800,color:V.text}},'Devis'),h('div',{style:{fontSize:12,color:V.muted}},`${items.length} demandes`)),
+      nonLus>0&&h('div',{style:{background:`linear-gradient(135deg,${V.orange},#cc5500)`,borderRadius:20,padding:'6px 14px',fontSize:12,fontWeight:700,color:'#fff',boxShadow:glow(V.orange)}},`🔔 ${nonLus} nouveau${nonLus>1?'x':''}`)
+    ),
+
+    items.map(dv=>{
+      const st=stDv[dv.statut]||stDv.nouveau;
+      return h('div',{key:dv.id,style:{background:V.card,border:`1px solid ${st.br}`,borderRadius:18,padding:16,marginBottom:10,boxShadow:dv.statut==='nouveau'?glow(V.orange):'none'}},
+        h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:10}},
+          h('div',null,
+            h('div',{style:{fontSize:15,fontWeight:800,color:V.text}},dv.clients?.nom),
+            h('div',{style:{fontSize:11,color:V.muted,marginTop:2}},`📞 ${dv.clients?.telephone} · #${dv.reference}`)
+          ),
+          h('span',{style:{display:'inline-flex',alignItems:'center',gap:5,padding:'5px 12px',borderRadius:20,fontSize:11,fontWeight:700,color:st.color,background:st.bg,border:`1px solid ${st.br}`}},`${st.icon} ${st.label}`)
+        ),
+        h('div',{style:{display:'flex',gap:6,marginBottom:12,flexWrap:'wrap'}},
+          h('span',{style:{background:V.accentBg,border:`1px solid ${V.accentBr}`,color:V.accent,borderRadius:8,padding:'3px 10px',fontSize:11,fontWeight:600}},`📱 ${dv.appareil}`),
+          dv.panne&&h('span',{style:{background:V.orangeBg,border:`1px solid ${V.orangeBr}`,color:V.orange,borderRadius:8,padding:'3px 10px',fontSize:11,fontWeight:600}},`🔧 ${dv.panne}`)
+        ),
+        h('div',{style:{display:'flex',gap:8}},
+          dv.statut==='nouveau'&&h('button',{onClick:()=>marquerLu(dv.id),style:{flex:1,padding:'9px',borderRadius:10,background:V.surface,border:`1px solid ${V.border}`,cursor:'pointer',fontSize:11,fontWeight:700,color:V.muted,fontFamily:'inherit'}},'👁 Marquer lu'),
+          dv.statut!=='repondu'&&h('button',{onClick:()=>ouvrirReponse(dv),style:{flex:2,padding:'9px',borderRadius:10,background:`linear-gradient(135deg,${V.green},#0d9e60)`,border:'none',cursor:'pointer',fontSize:11,fontWeight:700,color:'#fff',fontFamily:'inherit'}},'📱 Répondre SMS'),
+          dv.statut==='repondu'&&h('div',{style:{fontSize:11,color:V.green,fontWeight:600,padding:'9px 0'}},'✅ SMS envoyé')
+        )
+      );
+    }),
+    items.length===0&&h('div',{style:{textAlign:'center',color:V.muted,marginTop:60,fontSize:13}},'Aucun devis')
+  );
+}
+
+/* ─── TAB RDV ─── */
+function RdvTab({onNotif}){
+  const [items,setItems]=useState([]);
+  const [loadingRdv,setLoadingRdv]=useState(true);
+  const [smsM,setSmsM]=useState(null);
+  const [showAjout,setShowAjout]=useState(false);
+  const [form,setForm]=useState({nom:'',telephone:'',appareil:'',date_rdv:'',heure_rdv:'10:00'});
+
+  useEffect(()=>{
+    db.getRdv().then(d=>{if(d)setItems(d);setLoadingRdv(false);});
+  },[]);
+
+  const confirmer=async(id)=>{await db.updateRdvStatut(id,'confirme');setItems(r=>r.map(x=>x.id===id?{...x,statut:'confirme'}:x));onNotif('✓ RDV confirmé !');};
+  const annuler=async(id)=>{await db.updateRdvStatut(id,'annule');setItems(r=>r.map(x=>x.id===id?{...x,statut:'annule'}:x));};
+
+  const ouvrirSmsRappel=(r)=>{
+    setSmsM({titre:'📅 Rappel RDV SMS',message:smsRdv(r,r.clients),telephone:r.tel_client||r.clients?.telephone,rid:r.id});
+  };
+  const confirmerSmsRdv=async()=>{
+    const ok=await sendSMS(smsM.telephone,smsM.message);
+    if(ok){await db.marquerRappel(smsM.rid);setItems(i=>i.map(x=>x.id===smsM.rid?{...x,rappel_envoye:true}:x));onNotif('✅ Rappel SMS envoye via Brevo !');}
+    else{onNotif('❌ Erreur SMS');}
+    setSmsM(null);
+  };
+
+  const ajouterRdv=()=>{
+    if(!form.nom||!form.date_rdv)return;
+    setItems(r=>[...r,{id:Date.now(),statut:'attente',appareil:form.appareil||'À préciser',date_rdv:form.date_rdv,heure_rdv:form.heure_rdv,rappel_envoye:false,clients:{nom:form.nom,telephone:form.telephone}}]);
+    onNotif('📅 RDV ajouté !');
+    setForm({nom:'',telephone:'',appareil:'',date_rdv:'',heure_rdv:'10:00'});
+    setShowAjout(false);
+  };
+
+  const fmtDate=d=>{try{return new Date(d).toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'short'})}catch{return d}};
+  const attente=items.filter(r=>r.statut==='attente').length;
+
+  return h('div',{style:{padding:'16px 16px 100px'}},
+    smsM&&h(SmsModal,{...smsM,onClose:()=>setSmsM(null),onSend:confirmerSmsRdv}),
+    showAjout&&h(Sheet,{onClose:()=>setShowAjout(false)},
+      h('div',{style:{fontWeight:800,fontSize:16,color:V.text,marginBottom:16}},'📅 Nouveau RDV'),
+      [['nom','Nom *','Mohamed Benali'],['telephone','Téléphone','06 12 34 56 78'],['appareil','Appareil','iPhone 14...']].map(([k,l,p])=>
+        h('div',{key:k},h('label',{style:lblStyle},l),h('input',{style:inpStyle,placeholder:p,value:form[k],onChange:e=>setForm(f=>({...f,[k]:e.target.value}))}))
+      ),
+      h('label',{style:lblStyle},'Date *'),
+      h('input',{type:'date',style:inpStyle,value:form.date_rdv,onChange:e=>setForm(f=>({...f,date_rdv:e.target.value}))}),
+      h('label',{style:lblStyle},'Heure'),
+      h('select',{style:{...inpStyle,marginBottom:20},value:form.heure_rdv,onChange:e=>setForm(f=>({...f,heure_rdv:e.target.value}))},
+        ['09:00','09:30','10:00','10:30','11:00','11:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30'].map(h2=>h('option',{key:h2,value:h2},h2))
+      ),
+      h('div',{style:{display:'flex',gap:10}},
+        h('button',{onClick:()=>setShowAjout(false),style:btnBase(V.card,V.muted,`1px solid ${V.border}`)},'Annuler'),
+        h('button',{onClick:ajouterRdv,style:{...btnBase(`linear-gradient(135deg,${V.accent},${V.pink})`,'#fff'),flex:2,opacity:form.nom&&form.date_rdv?1:.45}},'✓ Ajouter')
+      )
+    ),
+
+    h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}},
+      h('div',null,h('div',{style:{fontSize:22,fontWeight:800,color:V.text}},'Rendez-vous'),h('div',{style:{fontSize:12,color:V.muted}},`${items.length} RDV`)),
+      h('div',{style:{display:'flex',gap:8,alignItems:'center'}},
+        attente>0&&h('div',{style:{background:`linear-gradient(135deg,${V.orange},#cc5500)`,borderRadius:20,padding:'6px 12px',fontSize:11,fontWeight:700,color:'#fff'}},`⏳ ${attente}`),
+        h('button',{onClick:()=>setShowAjout(true),style:{background:`linear-gradient(135deg,${V.accent},${V.pink})`,border:'none',borderRadius:12,padding:'10px 14px',color:'#fff',fontWeight:700,fontSize:14,cursor:'pointer'}},'➕')
+      )
+    ),
+
+    items.map(r=>{
+      const bCol=r.statut==='confirme'?V.greenBr:r.statut==='annule'?V.border:V.orangeBr;
+      const glw=r.statut==='attente'?glow(V.orange):r.statut==='confirme'?glow(V.green):'none';
+      return h('div',{key:r.id,style:{background:V.card,border:`1px solid ${bCol}`,borderRadius:18,padding:16,marginBottom:10,boxShadow:glw}},
+        h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:10}},
+          h('div',null,
+            h('div',{style:{fontSize:15,fontWeight:800,color:V.text}},r.nom_client||r.nom_client||r.clients?.nom||'Client'),
+            h('div',{style:{fontSize:11,color:V.muted,marginTop:2}},r.tel_client||r.clients?.telephone)
+          ),
+          h('span',{style:{padding:'5px 12px',borderRadius:20,fontSize:11,fontWeight:700,
+            color:r.statut==='confirme'?V.green:r.statut==='annule'?V.muted:V.orange,
+            background:r.statut==='confirme'?V.greenBg:r.statut==='annule'?V.surface:V.orangeBg,
+            border:`1px solid ${bCol}`}},
+            r.statut==='confirme'?'✓ Confirmé':r.statut==='annule'?'✗ Annulé':'⏳ En attente'
+          )
+        ),
+        h('div',{style:{display:'flex',gap:8,marginBottom:12,flexWrap:'wrap'}},
+          h('span',{style:{background:V.accentBg,border:`1px solid ${V.accentBr}`,color:V.accent,borderRadius:8,padding:'4px 10px',fontSize:12,fontWeight:700}},`📅 ${fmtDate(r.date_rdv)}`),
+          h('span',{style:{background:V.yellowBg,border:`1px solid ${V.yellowBr}`,color:V.yellow,borderRadius:8,padding:'4px 10px',fontSize:12,fontWeight:700}},`⏰ ${r.heure_rdv}`),
+          h('span',{style:{background:V.pinkBg,border:`1px solid ${V.pinkBr}`,color:V.pink,borderRadius:8,padding:'4px 10px',fontSize:12,fontWeight:700}},`📱 ${r.appareil}`)
+        ),
+        r.statut==='attente'&&h('div',{style:{display:'flex',gap:8,marginBottom:10}},
+          h('button',{onClick:()=>confirmer(r.id),style:{flex:1,padding:'10px',borderRadius:10,background:`linear-gradient(135deg,${V.green},#0d9e60)`,border:'none',cursor:'pointer',fontSize:12,fontWeight:700,color:'#fff',fontFamily:'inherit'}},'✓ Confirmer'),
+          h('button',{onClick:()=>annuler(r.id),style:{flex:1,padding:'10px',borderRadius:10,background:V.redBg,border:`1px solid ${V.redBr}`,cursor:'pointer',fontSize:12,fontWeight:700,color:V.red,fontFamily:'inherit'}},'✗ Annuler')
+        ),
+        r.statut!=='annule'&&(r.rappel
+          ?h('div',{style:{fontSize:11,color:V.green,fontWeight:600}},'✓ Rappel SMS envoyé')
+          :h('button',{onClick:()=>ouvrirSmsRappel(r),style:{width:'100%',padding:'10px',borderRadius:10,background:V.surface,border:`1px solid ${V.accentBr}`,cursor:'pointer',fontSize:12,fontWeight:700,color:V.accent,fontFamily:'inherit'}},'📱 Envoyer rappel SMS')
+        )
+      );
+    }),
+    items.length===0&&h('div',{style:{textAlign:'center',color:V.muted,marginTop:60,fontSize:13}},'Aucun RDV')
+  );
+}
+
+/* ─── TAB TARIFS ─── */
+function TarifsTab({onNotif}){
+  const [allTarifs,setAllTarifs]=useState([]);
+  const [marque,setMarque]=useState('Apple');
+  const [search,setSearch]=useState('');
+  const [editing,setEditing]=useState(null);
+  const [showAjout,setShowAjout]=useState(false);
+  const [newT,setNewT]=useState({marque:'Apple',nom:'',prix:'',duree:'1h'});
+
+  useEffect(()=>{
+    db.getTarifs().then(d=>{if(d)setAllTarifs(d);});
+  },[]);
+
+  const marques=[...new Set(allTarifs.map(t=>t.marque))];
+  const items=allTarifs.filter(t=>t.marque===marque&&t.nom.toLowerCase().includes(search.toLowerCase()));
+
+  const toggleActif=async(t)=>{
+    await db.updateTarif(t.id,{actif:!t.actif});
+    setAllTarifs(p=>p.map(x=>x.id===t.id?{...x,actif:!x.actif}:x));
+  };
+  const supprimer=async(t)=>{
+    await db.deleteTarif(t.id);
+    setAllTarifs(p=>p.filter(x=>x.id!==t.id));
+    setEditing(null);onNotif('🗑 Supprimé');
+  };
+  const sauvegarder=async(t)=>{
+    await db.updateTarif(t.id,{nom:t.nom,prix:t.prix,duree:t.duree});
+    setAllTarifs(p=>p.map(x=>x.id===t.id?t:x));
+    setEditing(null);onNotif('✓ Tarif mis à jour !');
+  };
+  const ajouter=async()=>{
+    if(!newT.nom||!newT.prix)return;
+    const saved=await db.addTarif({...newT,actif:true,ordre:items.length+1});
+    if(saved&&saved[0])setAllTarifs(p=>[...p,saved[0]]);
+    setNewT({marque:'Apple',nom:'',prix:'',duree:'1h'});
+    setShowAjout(false);onNotif('✓ Tarif ajouté !');
+  };
+
+  const Form=({title,data,setData,onConfirm,onClose,showDel})=>
+    h(Sheet,{onClose},
+      h('div',{style:{fontWeight:800,fontSize:16,color:V.text,marginBottom:16}},title),
+      title.includes('Nouveau')&&h('div',null,
+        h('label',{style:lblStyle},'Marque'),
+        h('select',{style:inpStyle,value:data.marque,onChange:e=>setData(n=>({...n,marque:e.target.value}))},MARQUES.map(m=>h('option',{key:m,value:m},m)))
+      ),
+      h('label',{style:lblStyle},'Nom de la prestation'),
+      h('input',{style:inpStyle,value:data.nom,onChange:e=>setData(n=>({...n,nom:e.target.value}))}),
+      h('label',{style:lblStyle},'Prix'),
+      h('input',{style:inpStyle,placeholder:'89€',value:data.prix,onChange:e=>setData(n=>({...n,prix:e.target.value}))}),
+      h('label',{style:lblStyle},'Durée'),
+      h('select',{style:{...inpStyle,marginBottom:20},value:data.duree,onChange:e=>setData(n=>({...n,duree:e.target.value}))},
+        ['30min','45min','1h','1h30','2h','2h30','3h'].map(d=>h('option',{key:d,value:d},d))
+      ),
+      h('div',{style:{display:'flex',gap:10}},
+        showDel&&h('button',{onClick:()=>supprimer(data),style:btnBase(V.redBg,V.red,`1px solid ${V.redBr}`)},'🗑'),
+        h('button',{onClick:onClose,style:btnBase(V.card,V.muted,`1px solid ${V.border}`)},'Annuler'),
+        h('button',{onClick:onConfirm,style:{...btnBase(`linear-gradient(135deg,${V.accent},${V.pink})`,'#fff'),flex:2,opacity:data.nom&&data.prix?1:.45}},'✓ Sauvegarder')
+      )
+    );
+
+  return h('div',{style:{padding:'16px 16px 100px'}},
+    showAjout&&h(Form,{title:'➕ Nouveau tarif',data:newT,setData:setNewT,onConfirm:ajouter,onClose:()=>setShowAjout(false),showDel:false}),
+    editing&&h(Form,{title:'✏️ Modifier',data:editing,setData:setEditing,onConfirm:()=>sauvegarder(editing),onClose:()=>setEditing(null),showDel:true}),
+
+    h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}},
+      h('div',null,h('div',{style:{fontSize:22,fontWeight:800,color:V.text}},'Tarifs'),h('div',{style:{fontSize:12,color:V.muted}},'Grille des prestations')),
+      h('button',{onClick:()=>setShowAjout(true),style:{background:`linear-gradient(135deg,${V.accent},${V.pink})`,border:'none',borderRadius:12,padding:'10px 16px',color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',boxShadow:glow(V.accent)}},'➕ Ajouter')
+    ),
+
+    h('input',{style:{...inpStyle,margin:'14px 0 12px'},placeholder:'🔍 Rechercher...',value:search,onChange:e=>setSearch(e.target.value)}),
+
+    h('div',{style:{display:'flex',gap:6,overflowX:'auto',marginBottom:16,paddingBottom:4}},
+      marques.map(m=>h('div',{key:m,onClick:()=>setMarque(m),style:{flexShrink:0,padding:'7px 14px',borderRadius:20,fontSize:12,fontWeight:700,cursor:'pointer',
+        background:marque===m?V.accent:V.card,color:marque===m?'#fff':V.muted,border:`1px solid ${marque===m?V.accent:V.border}`}},`${m} (${(tarifs[m]||[]).length})`))
+    ),
+
+    items.map(t=>h('div',{key:t.id,style:{background:V.card,border:`1px solid ${t.actif?V.border:V.redBr}`,borderRadius:14,padding:'12px 14px',marginBottom:8,display:'flex',alignItems:'center',gap:10,opacity:t.actif?1:.5}},
+      h('div',{style:{flex:1}},
+        h('div',{style:{fontSize:13,fontWeight:700,color:V.text}},t.nom),
+        h('div',{style:{fontSize:11,color:V.muted,marginTop:2}},`⏱ ${t.duree}${!t.actif?' · Masqué':''}`)
+      ),
+      h('div',{style:{fontSize:15,fontWeight:800,color:V.accent,marginRight:4}},t.prix),
+      h('button',{onClick:()=>toggleActif(t),style:{background:t.actif?V.greenBg:V.redBg,border:`1px solid ${t.actif?V.greenBr:V.redBr}`,borderRadius:8,padding:'6px 10px',cursor:'pointer',fontSize:12,fontWeight:700,color:t.actif?V.green:V.red}},t.actif?'✓':'✗'),
+      h('button',{onClick:()=>setEditing({...t}),style:{background:V.accentBg,border:`1px solid ${V.accentBr}`,borderRadius:8,padding:'6px 10px',cursor:'pointer',fontSize:12,color:V.accent}},'✏️')
+    )),
+    items.length===0&&h('div',{style:{textAlign:'center',color:V.muted,marginTop:60,fontSize:13}},'Aucun tarif')
+  );
+}
+
+/* ─── APP ─── */
+const TABS=[{id:'repairs',icon:'🔧',label:'Réparations'},{id:'devis',icon:'📋',label:'Devis'},{id:'rdv',icon:'📅',label:'RDV'},{id:'tarifs',icon:'💰',label:'Tarifs'}];
+
+function App(){
+  const [tab,setTab]=useState('repairs');
+  const [toast,setToast]=useState(null);
+  const notif=msg=>setToast(msg);
+
+  return h(React.Fragment,null,
+    toast&&h(Toast,{msg:toast,onClose:()=>setToast(null)}),
+    h('div',{style:{background:V.bg,minHeight:'100vh',color:V.text,maxWidth:430,margin:'0 auto',position:'relative'}},
+
+      /* header */
+      h('div',{style:{background:`linear-gradient(135deg,${V.surface},${V.card})`,padding:'14px 20px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:100,borderBottom:`1px solid ${V.border}`}},
+        h('div',{style:{display:'flex',alignItems:'center',gap:12}},
+          h('div',{style:{width:42,height:42,background:`linear-gradient(135deg,${V.accent},${V.pink})`,borderRadius:13,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,boxShadow:glow(V.accent)}},'📱'),
+          h('div',null,
+            h('div',{style:{fontSize:17,fontWeight:800,color:V.text}},'Phone Info Service'),
+            h('div',{style:{fontSize:10,color:V.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:1}},'Administration')
+          )
+        ),
+        h('div',{style:{display:'flex',alignItems:'center',gap:6,background:V.greenBg,border:`1px solid ${V.greenBr}`,borderRadius:20,padding:'6px 12px'}},
+          h('span',{style:{width:7,height:7,borderRadius:'50%',background:V.green,display:'inline-block',animation:'pulse 2s infinite'}}),
+          h('span',{style:{fontSize:11,fontWeight:700,color:V.green}},'En ligne')
+        )
+      ),
+
+      /* tabs content */
+      tab==='repairs'&&h(RepairsTab,{onNotif:notif}),
+      tab==='devis'&&h(DevisTab,{onNotif:notif}),
+      tab==='rdv'&&h(RdvTab,{onNotif:notif}),
+      tab==='tarifs'&&h(TarifsTab,{onNotif:notif}),
+
+      /* bottom nav */
+      h('div',{style:{position:'fixed',bottom:0,left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:430,background:V.surface,borderTop:`1px solid ${V.border}`,display:'flex',zIndex:100}},
+        TABS.map(t=>h('div',{key:t.id,onClick:()=>setTab(t.id),style:{flex:1,display:'flex',flexDirection:'column',alignItems:'center',padding:'10px 4px',gap:3,cursor:'pointer',
+          color:tab===t.id?V.accent:V.muted,fontSize:9,fontWeight:tab===t.id?700:500,textTransform:'uppercase',letterSpacing:.5,position:'relative'}},
+          h('div',{style:{position:'absolute',top:0,left:'20%',right:'20%',height:2,background:tab===t.id?V.accent:'transparent',borderRadius:'0 0 4px 4px',boxShadow:tab===t.id?glow(V.accent):'none'}}),
+          h('span',{style:{fontSize:20}},t.icon),
+          t.label
+        ))
+      )
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+</script>
+</body>
+</html>
