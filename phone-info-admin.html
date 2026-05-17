@@ -6,6 +6,7 @@
 <title>Phone Info Service — Admin</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#0e0b16}
@@ -27,37 +28,65 @@ button:active{opacity:.75!important;transform:scale(.97)!important}
 const {useState,useEffect,useRef,createElement:h} = React;
 
 /* ─── SUPABASE ─── */
+/* ─── SUPABASE SDK (comme Cyber Mons) ─── */
 const SUPA_URL='https://byezhlpfykjxwvosewqf.supabase.co';
-const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5ZXpobHBmeWtqeHd2b3Nld3FmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODk1NzI5MiwiZXhwIjoyMDk0NTMzMjkyfQ.VRmq9QSPAUJCJxi2qAAXlEMAFFLluOORxiuXQyqIHGU';
-const HDRS={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
-const supa=async(path,opts={})=>{
-  const res=await fetch(SUPA_URL+'/rest/v1/'+path,{headers:{...HDRS,...(opts.headers||{})},...opts});
-  if(!res.ok){console.error('Supabase:',await res.text());return null;}
-  const t=await res.text();return t?JSON.parse(t):null;
-};
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5ZXpobHBmeWtqeHd2b3Nld3FmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NTcyOTIsImV4cCI6MjA5NDUzMzI5Mn0.9iCAQCZ2v3yYotMxyrXhlCqTNqyF10Wex1C7KwdCNCI';
+const { createClient } = supabase;
+const sb = createClient(SUPA_URL, SUPA_KEY);
+
 const db={
-  getReps:()=>supa('reparations?select=*&order=created_at.desc'),
-  addRep:(d)=>supa('reparations',{method:'POST',body:JSON.stringify(d)}),
-  updateRepStatut:(id,statut,pct)=>supa('reparations?id=eq.'+id,{method:'PATCH',body:JSON.stringify({statut,progression:pct,updated_at:new Date()})}),
-  marquerNotifie:(id)=>supa('reparations?id=eq.'+id,{method:'PATCH',body:JSON.stringify({notifie:true})}),
-  getOrCreateClient:async(nom,telephone,email)=>{
-    const tel=telephone.replace(/\s/g,'');
-    const ex=await supa('clients?telephone=eq.'+tel+'&select=id');
-    if(ex&&ex[0])return ex[0].id;
-    const cr=await supa('clients',{method:'POST',body:JSON.stringify({nom,telephone:tel,email:email||''})});
-    return cr&&cr[0]?cr[0].id:null;
+  getReps: async()=>{
+    const {data,error}=await sb.from('reparations').select('*').order('created_at',{ascending:false});
+    if(error)console.error('getReps:',error);
+    return data||[];
   },
-  getDevis:()=>supa('devis?select=*,clients(*)&order=created_at.desc'),
-  updateDevisStatut:(id,statut)=>supa('devis?id=eq.'+id,{method:'PATCH',body:JSON.stringify({statut})}),
-  getRdv:()=>supa('rendez_vous?select=*,clients(*)&order=date_rdv.asc'),
-  updateRdvStatut:(id,statut)=>supa('rendez_vous?id=eq.'+id,{method:'PATCH',body:JSON.stringify({statut})}),
-  marquerRappel:(id)=>supa('rendez_vous?id=eq.'+id,{method:'PATCH',body:JSON.stringify({rappel_envoye:true})}),
-  getTarifs:()=>supa('tarifs?order=marque.asc,ordre.asc'),
-  addTarif:(d)=>supa('tarifs',{method:'POST',body:JSON.stringify(d)}),
-  updateTarif:(id,d)=>supa('tarifs?id=eq.'+id,{method:'PATCH',body:JSON.stringify(d)}),
-  deleteTarif:(id)=>supa('tarifs?id=eq.'+id,{method:'DELETE'}),
-  getAvis:()=>supa('avis?order=created_at.desc'),
-  validerAvis:(id,v)=>supa('avis?id=eq.'+id,{method:'PATCH',body:JSON.stringify({valide:v})}),
+  addRep: async(d)=>{
+    const {data,error}=await sb.from('reparations').insert(d).select().single();
+    if(error)console.error('addRep:',error);
+    return data;
+  },
+  updateRepStatut: async(id,statut,pct)=>{
+    const {error}=await sb.from('reparations').update({statut,progression:pct,updated_at:new Date()}).eq('id',id);
+    if(error)console.error('updateRep:',error);
+  },
+  marquerNotifie: async(id)=>{
+    await sb.from('reparations').update({notifie:true}).eq('id',id);
+  },
+  getDevis: async()=>{
+    const {data,error}=await sb.from('devis').select('*').order('created_at',{ascending:false});
+    if(error)console.error('getDevis:',error);
+    return data||[];
+  },
+  updateDevisStatut: async(id,statut)=>{
+    await sb.from('devis').update({statut}).eq('id',id);
+  },
+  getRdv: async()=>{
+    const {data,error}=await sb.from('rendez_vous').select('*').order('date_rdv',{ascending:true});
+    if(error)console.error('getRdv:',error);
+    return data||[];
+  },
+  updateRdvStatut: async(id,statut)=>{
+    await sb.from('rendez_vous').update({statut}).eq('id',id);
+  },
+  marquerRappel: async(id)=>{
+    await sb.from('rendez_vous').update({rappel_envoye:true}).eq('id',id);
+  },
+  getTarifs: async()=>{
+    const {data,error}=await sb.from('tarifs').select('*').order('marque').order('ordre');
+    if(error)console.error('getTarifs:',error);
+    return data||[];
+  },
+  addTarif: async(d)=>{
+    const {data,error}=await sb.from('tarifs').insert(d).select().single();
+    if(error)console.error('addTarif:',error);
+    return data;
+  },
+  updateTarif: async(id,d)=>{
+    await sb.from('tarifs').update(d).eq('id',id);
+  },
+  deleteTarif: async(id)=>{
+    await sb.from('tarifs').delete().eq('id',id);
+  },
 };
 
 /* ─── PALETTE VIOLET & ROSE ─── */
@@ -247,44 +276,33 @@ function ModalAjout({onClose,onAdd,onNotif}){
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
 
   const ajouter=async()=>{
-    if(!form.client||!form.appareil)return;
+    if(!form.client||!form.appareil){onNotif('Remplissez nom et appareil');return;}
     setLoading(true);
-    try{
-      const ref=mkRef('PIS');
-      const tel=(form.telephone||'').replace(/\s/g,'');
-      const saved=await supa('reparations',{method:'POST',body:JSON.stringify({
-        reference:ref,
-        nom_client:form.client,
-        tel_client:tel,
-        appareil:form.appareil,
-        marque:form.marque||'',
-        panne:form.panne||'',
-        prix:form.prix||'',
-        statut:form.statut||'recu',
-        progression:STATUTS[form.statut]?.pct||10,
-        notifie:false
-      })});
-      const rep={
-        id:saved&&saved[0]?saved[0].id:Date.now(),
-        reference:ref,
-        appareil:form.appareil,
-        marque:form.marque,
-        panne:form.panne,
-        prix:form.prix,
-        statut:form.statut||'recu',
-        progression:STATUTS[form.statut]?.pct||10,
-        notifie:false,
-        clients:{nom:form.client,telephone:form.telephone,email:form.email}
-      };
-      onAdd(rep);
-      if(tel) sendSMS(tel,'Bonjour '+form.client.split(' ')[0]+' ! Recu votre '+form.appareil+'. Ref: '+ref+' - Phone Info Service');
-      onNotif('Reparation ajoutee — #'+ref);
+    const ref=mkRef('PIS');
+    const tel=(form.telephone||'').replace(/\s/g,'');
+    const {data,error}=await sb.from('reparations').insert({
+      reference:ref,
+      nom_client:form.client,
+      tel_client:tel,
+      appareil:form.appareil,
+      marque:form.marque||'',
+      panne:form.panne||'',
+      prix:form.prix||'',
+      statut:form.statut||'recu',
+      progression:STATUTS[form.statut]?.pct||10,
+      notifie:false
+    }).select().single();
+    if(error){
+      onNotif('Erreur: '+error.message);
       setLoading(false);
-      onClose();
-    }catch(e){
-      onNotif('Erreur: '+e.message);
-      setLoading(false);
+      return;
     }
+    const rep={...data,clients:{nom:form.client,telephone:form.telephone}};
+    onAdd(rep);
+    if(tel) sendSMS(tel,'Bonjour '+form.client.split(' ')[0]+' ! Recu votre '+form.appareil+'. Ref: '+ref+' - Phone Info Service');
+    onNotif('Reparation ajoutee #'+ref);
+    setLoading(false);
+    onClose();
   };
 
   return h(Sheet,{onClose},
